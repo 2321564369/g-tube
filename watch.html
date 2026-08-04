@@ -213,8 +213,8 @@ body { background: #000; color: #fff; min-height: 100vh; }
         <div class="channel-name" id="channelName"></div>
       </div>
       <div class="action-buttons">
-        <button class="action-btn like" id="likeBtn" onclick="react('like')">👍 <span id="likeCount">0</span></button>
-        <button class="action-btn dislike" id="dislikeBtn" onclick="react('dislike')">👎</button>
+        <button class="action-btn like" id="likeBtn" onclick="react('like')">👍 Like</button>
+        <button class="action-btn dislike" id="dislikeBtn" onclick="react('dislike')">👎 Dislike</button>
         <button class="action-btn" id="watchLaterBtn" onclick="toggleWatchLater()">＋ Watch Later</button>
       </div>
     </div>
@@ -287,7 +287,6 @@ body { background: #000; color: #fff; min-height: 100vh; }
     document.getElementById("channelAvatar").textContent = initial(video.channel);
     document.getElementById("channelName").textContent = video.channel || "Unknown channel";
 
-    // Log watch history if signed in
     const username = getUsername();
     if (username) {
       await sb.from("watch_history").insert({ username, video_id: video.id });
@@ -298,27 +297,18 @@ body { background: #000; color: #fff; min-height: 100vh; }
   }
 
   async function loadReactionCounts() {
-    const { data } = await sb
+    const username = getUsername();
+    if (!username) return;
+
+    const { data: myReaction } = await sb
       .from("reactions")
       .select("reaction")
-      .eq("video_id", videoId);
+      .eq("video_id", videoId)
+      .eq("username", username)
+      .maybeSingle();
 
-    if (!data) return;
-    const likes = data.filter(r => r.reaction === "like").length;
-    document.getElementById("likeCount").textContent = likes;
-
-    const username = getUsername();
-    if (username) {
-      const mine = data.find(r => r.reaction);
-      const { data: myReaction } = await sb
-        .from("reactions")
-        .select("reaction")
-        .eq("video_id", videoId)
-        .eq("username", username)
-        .maybeSingle();
-      if (myReaction) {
-        document.getElementById(myReaction.reaction === "like" ? "likeBtn" : "dislikeBtn").classList.add("active");
-      }
+    if (myReaction) {
+      document.getElementById(myReaction.reaction === "like" ? "likeBtn" : "dislikeBtn").classList.add("active");
     }
   }
 
@@ -334,7 +324,6 @@ body { background: #000; color: #fff; min-height: 100vh; }
     document.getElementById("likeBtn").classList.remove("active");
     document.getElementById("dislikeBtn").classList.remove("active");
     document.getElementById(type === "like" ? "likeBtn" : "dislikeBtn").classList.add("active");
-    loadReactionCounts();
   }
 
   async function toggleWatchLater() {
