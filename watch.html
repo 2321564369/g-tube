@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Galaxy-tube</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+* {
+  margin: 0; padding: 0; box-sizing: border-box;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+body { background: #000; color: #fff; min-height: 100vh; }
+
+.galaxy {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(95, 61, 196, 0.8), transparent 40%),
+    radial-gradient(circle at 80% 60%, rgba(14, 165, 233, 0.6), transparent 35%),
+    radial-gradient(circle at 50% 50%, #020617, #000);
+  z-index: -2;
+}
+.galaxy::after {
+  content: "";
+  position: absolute; inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 50px 80px, #fff, transparent),
+    radial-gradient(1px 1px at 200px 150px, #fff, transparent),
+    radial-gradient(1px 1px at 400px 300px, #fff, transparent),
+    radial-gradient(1px 1px at 600px 100px, #fff, transparent),
+    radial-gradient(1px 1px at 800px 400px, #fff, transparent),
+    radial-gradient(1px 1px at 100px 500px, #fff, transparent);
+  animation: stars 60s linear infinite;
+  opacity: 0.5;
+}
+@keyframes stars { from { transform: translateY(0); } to { transform: translateY(-1000px); } }
+
+.topbar {
+  display: flex; align-items: center; gap: 20px;
+  padding: 15px 20px; margin: 15px 20px 0;
+  position: sticky; top: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(20px) saturate(1.2);
+  border-radius: 16px;
+  border: 1px solid rgba(167, 139, 250, 0.08);
+  box-shadow: 0 4px 30px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05);
+  z-index: 10;
+}
+.logo {
+  font-size: 20px; font-weight: 700; color: #a78bfa;
+  text-shadow: 0 0 10px rgba(167,139,250,0.5);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.back-link {
+  color: rgba(255,255,255,0.7);
+  text-decoration: none;
+  font-size: 14px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(167,139,250,0.2);
+  background: rgba(255,255,255,0.05);
+}
+.back-link:hover { color: #fff; background: rgba(167,139,250,0.1); }
+.current-user {
+  margin-left: auto;
+  font-size: 13px; color: rgba(255,255,255,0.7);
+  cursor: pointer;
+  padding: 6px 14px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 20px;
+  border: 1px solid rgba(167,139,250,0.2);
+  white-space: nowrap;
+}
+.current-user:hover { color: #fff; background: rgba(167,139,250,0.1); }
+
+.layout {
+  display: flex;
+  gap: 24px;
+  padding: 20px;
+  align-items: flex-start;
+}
+
+.main-col { flex: 1; min-width: 0; max-width: 900px; }
+
+.player-shell {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(167,139,250,0.15);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+}
+.player-shell video { width: 100%; height: 100%; display: block; }
+
+.video-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  margin-top: 18px;
+  text-shadow: 0 0 10px rgba(167,139,250,0.2);
+}
+
+.video-info-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  margin-top: 14px;
+  padding: 14px 18px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(167,139,250,0.1);
+  border-radius: 14px;
+}
+.channel-block { display: flex; align-items: center; gap: 12px; }
+.channel-avatar {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: linear-gradient(135deg, #7c3aed, #5b21b6);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 16px; color: #fff;
+  box-shadow: 0 4px 20px rgba(124,58,237,0.3);
+}
+.channel-name { font-weight: 600; font-size: 15px; color: #fff; }
+
+.action-buttons { display: flex; gap: 10px; }
+.action-btn {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(167,139,250,0.25);
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.85);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+.action-btn:hover { background: rgba(167,139,250,0.15); color: #fff; }
+.action-btn.active {
+  background: rgba(167,139,250,0.25);
+  border-color: rgba(167,139,250,0.6);
+  color: #a78bfa;
+}
+.action-btn.dislike.active { background: rgba(239,68,68,0.2); border-color: rgba(239,68,68,0.5); color: #f87171; }
+
+/* Sidebar of similar videos */
+.side-col { width: 340px; flex-shrink: 0; }
+.side-title {
+  font-size: 15px; font-weight: 700; color: rgba(255,255,255,0.85);
+  margin-bottom: 12px;
+}
+.similar-item {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  border-radius: 10px;
+  padding: 6px;
+  transition: background 0.2s ease;
+}
+.similar-item:hover { background: rgba(167,139,250,0.08); }
+.similar-thumb {
+  width: 140px; height: 78px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #2a1b69;
+  position: relative;
+  border: 1px solid rgba(167,139,250,0.15);
+}
+.similar-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.similar-duration {
+  position: absolute; bottom: 4px; right: 4px;
+  background: rgba(0,0,0,0.8); color: #fff;
+  font-size: 10px; padding: 1px 4px; border-radius: 3px;
+}
+.similar-meta { flex: 1; min-width: 0; }
+.similar-meta .t {
+  font-size: 13px; font-weight: 600; color: #fff;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden; line-height: 1.3;
+}
+.similar-meta .c { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 4px; }
+
+.empty { text-align: center; padding: 30px; color: rgba(255,255,255,0.6); }
+
+@media (max-width: 900px) {
+  .layout { flex-direction: column; }
+  .side-col { width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<div class="galaxy"></div>
+
+<div class="topbar">
+  <a href="index.html" class="logo">🌌 Galaxy-tube</a>
+  <a href="index.html" class="back-link">← Home</a>
+  <div class="current-user" id="accountPill" onclick="promptUsername()">Sign in</div>
+</div>
+
+<div class="layout">
+  <div class="main-col">
+    <div class="player-shell" id="playerShell">
+      <div class="empty">Loading...</div>
+    </div>
+    <div class="video-title" id="videoTitle"></div>
+    <div class="video-info-bar">
+      <div class="channel-block">
+        <div class="channel-avatar" id="channelAvatar">?</div>
+        <div class="channel-name" id="channelName"></div>
+      </div>
+      <div class="action-buttons">
+        <button class="action-btn like" id="likeBtn" onclick="react('like')">👍 <span id="likeCount">0</span></button>
+        <button class="action-btn dislike" id="dislikeBtn" onclick="react('dislike')">👎</button>
+        <button class="action-btn" id="watchLaterBtn" onclick="toggleWatchLater()">＋ Watch Later</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="side-col">
+    <div class="side-title">Similar videos</div>
+    <div id="similarList">
+      <div class="empty">Loading...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = "https://lpqrbrglatpcywdugkid.supabase.co";
+  const SUPABASE_ANON_KEY = "PASTE_YOUR_ANON_KEY_HERE";
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const VIDEO_BUCKET_URL = `${SUPABASE_URL}/storage/v1/object/public/videos`;
+
+  const params = new URLSearchParams(location.search);
+  const videoId = params.get("id");
+
+  function formatDuration(seconds) {
+    if (!seconds) return "";
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+  }
+  function initial(str) { return (str || "?").trim().charAt(0).toUpperCase(); }
+
+  function getUsername() { return localStorage.getItem("galaxy_video_username"); }
+
+  function promptUsername() {
+    const existing = getUsername();
+    const name = prompt("Enter a username:", existing || "");
+    if (name && name.trim()) {
+      localStorage.setItem("galaxy_video_username", name.trim());
+      updateAccountPill();
+    }
+  }
+  function updateAccountPill() {
+    document.getElementById("accountPill").textContent = getUsername() || "Sign in";
+  }
+
+  let currentVideo = null;
+
+  async function loadVideo() {
+    if (!videoId) {
+      document.getElementById("playerShell").innerHTML = `<div class="empty">No video specified.</div>`;
+      return;
+    }
+
+    const { data: video, error } = await sb
+      .from("videos")
+      .select("*")
+      .eq("id", videoId)
+      .single();
+
+    if (error || !video) {
+      document.getElementById("playerShell").innerHTML = `<div class="empty">Video not found.</div>`;
+      return;
+    }
+
+    currentVideo = video;
+
+    document.getElementById("playerShell").innerHTML = `
+      <video controls autoplay src="${VIDEO_BUCKET_URL}/${video.storage_path}"></video>
+    `;
+    document.getElementById("videoTitle").textContent = video.title;
+    document.getElementById("channelAvatar").textContent = initial(video.channel);
+    document.getElementById("channelName").textContent = video.channel || "Unknown channel";
+
+    // Log watch history if signed in
+    const username = getUsername();
+    if (username) {
+      await sb.from("watch_history").insert({ username, video_id: video.id });
+    }
+
+    loadReactionCounts();
+    loadSimilar(video);
+  }
+
+  async function loadReactionCounts() {
+    const { data } = await sb
+      .from("reactions")
+      .select("reaction")
+      .eq("video_id", videoId);
+
+    if (!data) return;
+    const likes = data.filter(r => r.reaction === "like").length;
+    document.getElementById("likeCount").textContent = likes;
+
+    const username = getUsername();
+    if (username) {
+      const mine = data.find(r => r.reaction);
+      const { data: myReaction } = await sb
+        .from("reactions")
+        .select("reaction")
+        .eq("video_id", videoId)
+        .eq("username", username)
+        .maybeSingle();
+      if (myReaction) {
+        document.getElementById(myReaction.reaction === "like" ? "likeBtn" : "dislikeBtn").classList.add("active");
+      }
+    }
+  }
+
+  async function react(type) {
+    const username = getUsername();
+    if (!username) { promptUsername(); return; }
+
+    await sb.from("reactions").upsert(
+      { username, video_id: videoId, reaction: type },
+      { onConflict: "username,video_id" }
+    );
+
+    document.getElementById("likeBtn").classList.remove("active");
+    document.getElementById("dislikeBtn").classList.remove("active");
+    document.getElementById(type === "like" ? "likeBtn" : "dislikeBtn").classList.add("active");
+    loadReactionCounts();
+  }
+
+  async function toggleWatchLater() {
+    const username = getUsername();
+    if (!username) { promptUsername(); return; }
+
+    const btn = document.getElementById("watchLaterBtn");
+    const { data: existing } = await sb
+      .from("watch_later")
+      .select("*")
+      .eq("username", username)
+      .eq("video_id", videoId)
+      .maybeSingle();
+
+    if (existing) {
+      await sb.from("watch_later").delete().eq("username", username).eq("video_id", videoId);
+      btn.textContent = "＋ Watch Later";
+      btn.classList.remove("active");
+    } else {
+      await sb.from("watch_later").insert({ username, video_id: videoId });
+      btn.textContent = "✓ Saved";
+      btn.classList.add("active");
+    }
+  }
+
+  async function loadSimilar(video) {
+    const { data: similar, error } = await sb
+      .from("videos")
+      .select("*")
+      .eq("channel", video.channel)
+      .neq("id", video.id)
+      .eq("status", "ready")
+      .order("created_at", { ascending: false })
+      .limit(10);
+
+    const list = document.getElementById("similarList");
+    if (error) { list.innerHTML = `<div class="empty">Error loading similar videos.</div>`; return; }
+    if (!similar.length) { list.innerHTML = `<div class="empty">No similar videos yet.</div>`; return; }
+
+    list.innerHTML = similar.map(v => `
+      <div class="similar-item" onclick="location.href='watch.html?id=${v.id}'">
+        <div class="similar-thumb">
+          <img src="${v.thumbnail_url || ''}" alt="${v.title}">
+          <div class="similar-duration">${formatDuration(v.duration_seconds)}</div>
+        </div>
+        <div class="similar-meta">
+          <div class="t">${v.title}</div>
+          <div class="c">${v.channel || "Unknown channel"}</div>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  updateAccountPill();
+  loadVideo();
+</script>
+
+</body>
+</html>
