@@ -6,10 +6,7 @@
 <title>Galaxy-tube</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-* {
-  margin: 0; padding: 0; box-sizing: border-box;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
 body { background: #000; color: #fff; min-height: 100vh; }
 
 .galaxy {
@@ -21,8 +18,7 @@ body { background: #000; color: #fff; min-height: 100vh; }
   z-index: -2;
 }
 .galaxy::after {
-  content: "";
-  position: absolute; inset: 0;
+  content: ""; position: absolute; inset: 0;
   background-image:
     radial-gradient(1px 1px at 50px 80px, #fff, transparent),
     radial-gradient(1px 1px at 200px 150px, #fff, transparent),
@@ -46,141 +42,83 @@ body { background: #000; color: #fff; min-height: 100vh; }
   box-shadow: 0 4px 30px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05);
   z-index: 10;
 }
-.logo {
-  font-size: 20px; font-weight: 700; color: #a78bfa;
-  text-shadow: 0 0 10px rgba(167, 139, 250, 0.5);
-  white-space: nowrap;
-}
+.logo { font-size: 20px; font-weight: 700; color: #a78bfa; text-shadow: 0 0 10px rgba(167,139,250,0.5); white-space: nowrap; }
 .search-container { display: flex; align-items: center; gap: 10px; flex: 1; max-width: 500px; }
 #searchInput {
-  flex: 1; padding: 8px 15px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(167, 139, 250, 0.3);
-  border-radius: 20px; color: white; font-size: 14px;
+  flex: 1; padding: 8px 15px; background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(167,139,250,0.3); border-radius: 20px; color: white; font-size: 14px;
 }
-#searchInput:focus {
-  outline: none; border-color: #a78bfa;
-  box-shadow: 0 0 20px rgba(167, 139, 250, 0.2);
-  background: rgba(255, 255, 255, 0.15);
-}
-#searchInput::placeholder { color: rgba(255, 255, 255, 0.5); }
+#searchInput:focus { outline: none; border-color: #a78bfa; box-shadow: 0 0 20px rgba(167,139,250,0.2); background: rgba(255,255,255,0.15); }
+#searchInput::placeholder { color: rgba(255,255,255,0.5); }
 #searchBtn {
-  padding: 8px 16px;
-  background: linear-gradient(135deg, #7c3aed, #5b21b6);
-  border: none; border-radius: 20px; color: white;
-  cursor: pointer; font-weight: 600; font-size: 14px;
-  transition: all 0.2s ease;
+  padding: 8px 16px; background: linear-gradient(135deg, #7c3aed, #5b21b6);
+  border: none; border-radius: 20px; color: white; cursor: pointer; font-weight: 600; font-size: 14px;
 }
-#searchBtn:hover { background: linear-gradient(135deg, #8b5cf6, #6d28d9); transform: translateY(-1px); }
-
+#searchBtn:hover { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
 .current-user {
-  margin-left: auto; font-size: 13px; color: rgba(255, 255, 255, 0.7);
-  cursor: pointer; padding: 6px 14px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 20px; border: 1px solid rgba(167, 139, 250, 0.2);
-  white-space: nowrap;
+  margin-left: auto; font-size: 13px; color: rgba(255,255,255,0.7); cursor: pointer;
+  padding: 6px 14px; background: rgba(255,255,255,0.05); border-radius: 20px;
+  border: 1px solid rgba(167,139,250,0.2); white-space: nowrap;
 }
-.current-user:hover { color: #fff; background: rgba(167, 139, 250, 0.1); }
+.current-user:hover { color: #fff; background: rgba(167,139,250,0.1); }
 
 .app { display: flex; padding: 20px; gap: 20px; }
-
 .sidebar {
-  width: 220px; flex-shrink: 0;
-  background: rgba(15, 23, 42, 0.85);
-  border-radius: 16px; padding: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  height: fit-content;
+  width: 220px; flex-shrink: 0; background: rgba(15,23,42,0.85);
+  border-radius: 16px; padding: 20px; border: 1px solid rgba(255,255,255,0.1); height: fit-content;
 }
 .sidebar ul { list-style: none; }
 .sidebar li {
-  display: flex; align-items: center; gap: 14px;
-  padding: 12px 15px; margin: 4px 0;
-  cursor: pointer; border-radius: 8px;
-  transition: all 0.2s ease;
-  color: rgba(255, 255, 255, 0.8); font-size: 14px;
+  display: flex; align-items: center; gap: 14px; padding: 12px 15px; margin: 4px 0;
+  cursor: pointer; border-radius: 8px; transition: all 0.2s ease; color: rgba(255,255,255,0.8); font-size: 14px;
 }
-.sidebar li:hover { background: rgba(167, 139, 250, 0.1); color: #fff; }
-.sidebar li.active { background: rgba(167, 139, 250, 0.2); color: #a78bfa; font-weight: 600; }
+.sidebar li:hover { background: rgba(167,139,250,0.1); color: #fff; }
+.sidebar li.active { background: rgba(167,139,250,0.2); color: #a78bfa; font-weight: 600; }
+.sidebar .nav-icon { width: 20px; height: 20px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.sidebar .nav-icon svg { width: 20px; height: 20px; filter: drop-shadow(0 0 3px rgba(167,139,250,0.4)); }
 
 .content { flex: 1; min-width: 0; }
 .section-title {
-  font-size: 20px; font-weight: 700; color: #fff;
-  text-shadow: 0 0 10px rgba(167, 139, 250, 0.3);
-  margin: 20px 0 16px;
-  display: flex; align-items: center; justify-content: space-between;
+  font-size: 20px; font-weight: 700; color: #fff; text-shadow: 0 0 10px rgba(167,139,250,0.3);
+  margin: 20px 0 16px; display: flex; align-items: center; justify-content: space-between;
 }
 .refresh-btn {
-  font-size: 13px; font-weight: 500;
-  color: rgba(255,255,255,0.6);
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(167,139,250,0.2);
-  border-radius: 16px; padding: 6px 14px;
-  cursor: pointer;
+  font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.6);
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(167,139,250,0.2);
+  border-radius: 16px; padding: 6px 14px; cursor: pointer;
 }
 .refresh-btn:hover { color: #fff; background: rgba(167,139,250,0.15); }
 
-.video-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 20px;
-}
+.video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
 .video-card { cursor: pointer; }
 .thumb-wrap {
-  position: relative; width: 100%; aspect-ratio: 16 / 9;
-  border-radius: 12px; overflow: hidden;
-  background: #2a1b69;
-  border: 2px solid rgba(167, 139, 250, 0.2);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  position: relative; width: 100%; aspect-ratio: 16/9; border-radius: 12px; overflow: hidden;
+  background: #2a1b69; border: 2px solid rgba(167,139,250,0.2); box-shadow: 0 4px 10px rgba(0,0,0,0.3);
   transition: all 0.2s ease;
 }
-.video-card:hover .thumb-wrap {
-  border-color: rgba(167, 139, 250, 0.6);
-  box-shadow: 0 0 20px rgba(167, 139, 250, 0.3);
-  transform: translateY(-2px);
-}
+.video-card:hover .thumb-wrap { border-color: rgba(167,139,250,0.6); box-shadow: 0 0 20px rgba(167,139,250,0.3); transform: translateY(-2px); }
 .thumb-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.duration-badge {
-  position: absolute; bottom: 6px; right: 6px;
-  background: rgba(0,0,0,0.8); color: #fff;
-  font-size: 12px; padding: 2px 6px; border-radius: 4px;
-}
+.duration-badge { position: absolute; bottom: 6px; right: 6px; background: rgba(0,0,0,0.8); color: #fff; font-size: 12px; padding: 2px 6px; border-radius: 4px; }
 .video-meta { display: flex; gap: 10px; margin-top: 10px; }
 .video-meta .avatar {
-  width: 36px; height: 36px; border-radius: 50%;
-  background: linear-gradient(135deg, #7c3aed, #5b21b6);
-  flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 14px; font-weight: 700; color: #fff;
-  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.3);
+  width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #7c3aed, #5b21b6);
+  flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #fff;
+  box-shadow: 0 4px 20px rgba(124,58,237,0.3);
 }
-.video-title {
-  font-size: 14px; font-weight: 600; line-height: 1.3; color: #fff;
-  display: -webkit-box; -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical; overflow: hidden;
-}
-.video-channel { font-size: 13px; color: rgba(255, 255, 255, 0.55); margin-top: 4px; }
+.video-title { font-size: 14px; font-weight: 600; line-height: 1.3; color: #fff; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.video-channel { font-size: 13px; color: rgba(255,255,255,0.55); margin-top: 4px; }
 
 .shorts-row { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 10px; }
 .short-card { flex: 0 0 auto; width: 170px; cursor: pointer; }
 .short-thumb {
-  width: 170px; height: 300px; border-radius: 12px;
-  background: #2a1b69;
-  border: 2px solid rgba(167, 139, 250, 0.2);
-  overflow: hidden; transition: all 0.2s ease;
+  width: 170px; height: 300px; border-radius: 12px; background: #2a1b69;
+  border: 2px solid rgba(167,139,250,0.2); overflow: hidden; transition: all 0.2s ease;
 }
-.short-card:hover .short-thumb {
-  border-color: rgba(167, 139, 250, 0.6);
-  box-shadow: 0 0 20px rgba(167, 139, 250, 0.3);
-  transform: translateY(-2px);
-}
+.short-card:hover .short-thumb { border-color: rgba(167,139,250,0.6); box-shadow: 0 0 20px rgba(167,139,250,0.3); transform: translateY(-2px); }
 .short-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.short-title {
-  font-size: 13px; color: #fff; margin-top: 8px;
-  display: -webkit-box; -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical; overflow: hidden;
-}
+.short-title { font-size: 13px; color: #fff; margin-top: 8px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
-.empty { text-align: center; padding: 40px 20px; color: rgba(255, 255, 255, 0.6); }
+.empty { text-align: center; padding: 40px 20px; color: rgba(255,255,255,0.6); }
 </style>
 </head>
 <body>
@@ -199,12 +137,30 @@ body { background: #000; color: #fff; min-height: 100vh; }
 <div class="app">
   <nav class="sidebar">
     <ul>
-      <li class="active"><span>🏠</span> Home</li>
-      <li><span>🎬</span> Shorts</li>
-      <li><span>✨</span> For You</li>
-      <li><span>🕒</span> History</li>
-      <li><span>⏰</span> Watch Later</li>
-      <li><span>📁</span> Playlists</li>
+      <li class="active">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="#a78bfa"><path d="M12 3l9 8h-3v9h-5v-6H11v6H6v-9H3z"/></svg></span>
+        Home
+      </li>
+      <li>
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="#fff"><rect x="5" y="2" width="14" height="20" rx="3"/><polygon points="10,9 16,12 10,15" fill="#7c3aed"/></svg></span>
+        Shorts
+      </li>
+      <li>
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="#fff"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z"/></svg></span>
+        For You
+      </li>
+      <li>
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg></span>
+        History
+      </li>
+      <li>
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="#fff"><path d="M6 2h12v20l-6-4-6 4z"/></svg></span>
+        Watch Later
+      </li>
+      <li>
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M3 6h6l2 2h10v11H3z"/></svg></span>
+        Playlists
+      </li>
     </ul>
   </nav>
 
@@ -213,14 +169,10 @@ body { background: #000; color: #fff; min-height: 100vh; }
       <span id="videoSectionTitle">Suggested for you</span>
       <span class="refresh-btn" onclick="loadSuggestions()">↻ Refresh</span>
     </div>
-    <div class="video-grid" id="videoGrid">
-      <div class="empty">Loading suggestions...</div>
-    </div>
+    <div class="video-grid" id="videoGrid"><div class="empty">Loading suggestions...</div></div>
 
     <div class="section-title">Shorts</div>
-    <div class="shorts-row" id="shortsRow">
-      <div class="empty">Loading...</div>
-    </div>
+    <div class="shorts-row" id="shortsRow"><div class="empty">Loading...</div></div>
   </div>
 </div>
 
@@ -229,8 +181,8 @@ body { background: #000; color: #fff; min-height: 100vh; }
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxwcXJicmdsYXRwY3l3ZHVna2lkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3OTcwMTAsImV4cCI6MjEwMTM3MzAxMH0.H4tvl85-IDvsJnICtnTy7dI1k-u8Xn9diVDPnLEG9a8";
   const SUPABASE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/search-youtube`;
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const REPO_BASE = "https://cdn.jsdelivr.net/gh/2321564369/g-tube@main";
 
-  // Only used as a fallback for brand-new users with no taste data yet
   const FALLBACK_QUERIES = ["trending", "music", "gaming", "news today"];
 
   function formatDuration(seconds) {
@@ -255,13 +207,29 @@ body { background: #000; color: #fff; min-height: 100vh; }
     document.getElementById("accountPill").textContent = getUsername() || "Sign in";
   }
 
+  // ---------- SHARED CROSS-PAGE NAVIGATION (same pattern as launchLocalGame) ----------
+  async function gotoPage(url) {
+    try {
+      const [baseUrl, queryString] = url.split("?");
+      const response = await fetch(baseUrl);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const html = await response.text();
+
+      // Force content-type ourselves so server headers/caching never matter
+      const blob = new Blob([html], { type: "text/html" });
+      const blobUrl = URL.createObjectURL(blob) + (queryString ? `?${queryString}` : "");
+
+      window.location.replace(blobUrl);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to load page: " + err.message);
+    }
+  }
+
   async function fetchYouTube(query) {
     const resp = await fetch(SUPABASE_FUNCTION_URL, {
       method: "POST",
-      headers: {
-        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
-        "Content-Type": "application/json",
-      },
+      headers: { "Authorization": `Bearer ${SUPABASE_ANON_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({ query }),
     });
     const data = await resp.json();
@@ -271,14 +239,11 @@ body { background: #000; color: #fff; min-height: 100vh; }
   function renderVideoGrid(results) {
     const grid = document.getElementById("videoGrid");
     const longform = results.filter(v => !v.is_short);
-    if (!longform.length) {
-      grid.innerHTML = '<div class="empty">No videos found.</div>';
-      return;
-    }
+    if (!longform.length) { grid.innerHTML = '<div class="empty">No videos found.</div>'; return; }
     grid.innerHTML = longform.map(v => `
-      <div class="video-card" onclick="watchVideo('${v.youtube_id}', '${v.title.replace(/'/g, "\\'")}')">
+      <div class="video-card" data-yt="${v.youtube_id}" data-title="${v.title.replace(/"/g, '&quot;')}">
         <div class="thumb-wrap">
-          <img src="${v.thumbnail_url || ''}" alt="${v.title}">
+          <img src="${v.thumbnail_url || ''}" alt="">
           <div class="duration-badge">${formatDuration(v.duration_seconds)}</div>
         </div>
         <div class="video-meta">
@@ -290,36 +255,33 @@ body { background: #000; color: #fff; min-height: 100vh; }
         </div>
       </div>
     `).join("");
+    grid.querySelectorAll(".video-card").forEach(el => {
+      el.addEventListener("click", () => watchVideo(el.dataset.yt, el.dataset.title));
+    });
   }
 
   function renderShortsRow(results) {
     const row = document.getElementById("shortsRow");
     const shorts = results.filter(v => v.is_short);
-    if (!shorts.length) {
-      row.innerHTML = '<div class="empty">No Shorts found.</div>';
-      return;
-    }
+    if (!shorts.length) { row.innerHTML = '<div class="empty">No Shorts found.</div>'; return; }
     row.innerHTML = shorts.map(v => `
-      <div class="short-card" onclick="watchVideo('${v.youtube_id}', '${v.title.replace(/'/g, "\\'")}')">
-        <div class="short-thumb"><img src="${v.thumbnail_url || ''}" alt="${v.title}"></div>
+      <div class="short-card" data-yt="${v.youtube_id}" data-title="${v.title.replace(/"/g, '&quot;')}">
+        <div class="short-thumb"><img src="${v.thumbnail_url || ''}" alt=""></div>
         <div class="short-title">${v.title}</div>
       </div>
     `).join("");
+    row.querySelectorAll(".short-card").forEach(el => {
+      el.addEventListener("click", () => watchVideo(el.dataset.yt, el.dataset.title));
+    });
   }
 
   async function getTasteQueries() {
     const username = getUsername();
     if (!username) return FALLBACK_QUERIES;
-
     const { data: taste, error } = await sb
-      .from("user_taste")
-      .select("value, score")
-      .eq("username", username)
-      .order("score", { ascending: false })
-      .limit(4);
-
+      .from("user_taste").select("value, score")
+      .eq("username", username).order("score", { ascending: false }).limit(4);
     if (error || !taste || !taste.length) return FALLBACK_QUERIES;
-
     return taste.map(t => t.value);
   }
 
@@ -328,70 +290,48 @@ body { background: #000; color: #fff; min-height: 100vh; }
     document.getElementById("videoSectionTitle").textContent = username ? "Suggested for you" : "Suggested (sign in for personalized picks)";
     document.getElementById("videoGrid").innerHTML = '<div class="empty">Loading suggestions...</div>';
     document.getElementById("shortsRow").innerHTML = '<div class="empty">Loading...</div>';
-
-    const queries = await getTasteQueries();
-    const batches = await Promise.all(queries.map(q => fetchYouTube(q)));
-    const combined = batches.flat();
-
-    renderVideoGrid(combined);
-    renderShortsRow(combined);
+    try {
+      const queries = await getTasteQueries();
+      const batches = await Promise.all(queries.map(q => fetchYouTube(q)));
+      const combined = batches.flat();
+      renderVideoGrid(combined);
+      renderShortsRow(combined);
+    } catch (err) {
+      console.error(err);
+      document.getElementById("videoGrid").innerHTML = `<div class="empty">Error loading suggestions: ${err.message}</div>`;
+    }
   }
 
   async function search() {
     const query = document.getElementById("searchInput").value.trim();
     if (!query) { loadSuggestions(); return; }
-
     document.getElementById("videoSectionTitle").textContent = `Results for "${query}"`;
     document.getElementById("videoGrid").innerHTML = '<div class="empty">Searching...</div>';
     document.getElementById("shortsRow").innerHTML = '<div class="empty">Searching...</div>';
-
-    const results = await fetchYouTube(query);
-    renderVideoGrid(results);
-    renderShortsRow(results);
+    try {
+      const results = await fetchYouTube(query);
+      renderVideoGrid(results);
+      renderShortsRow(results);
+    } catch (err) {
+      console.error(err);
+      document.getElementById("videoGrid").innerHTML = `<div class="empty">Error: ${err.message}</div>`;
+    }
   }
 
   async function watchVideo(youtubeId, title) {
     const { data: existing } = await sb
-      .from("videos")
-      .select("id")
-      .eq("youtube_id", youtubeId)
-      .eq("status", "ready")
-      .maybeSingle();
+      .from("videos").select("id")
+      .eq("youtube_id", youtubeId).eq("status", "ready").maybeSingle();
 
     let query;
     if (existing) {
       query = `id=${existing.id}`;
     } else {
-      await sb.from("requests").insert({
-        youtube_id: youtubeId,
-        title: title,
-        status: "pending",
-      });
+      await sb.from("requests").insert({ youtube_id: youtubeId, title, status: "pending" });
       query = `youtube_id=${youtubeId}`;
     }
 
-    openWatchPage(query);
-  }
-
-  async function openWatchPage(query) {
-    try {
-      const url = `watch.html?${query}`;
-      const response = await fetch(url);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const content = await response.text();
-
-      // Update the visible URL/query string so watch.html's own script
-      // (which reads location.search) sees the right params, without
-      // a real navigation.
-      history.pushState({}, "", url);
-
-      document.open();
-      document.write(content);
-      document.close();
-    } catch (err) {
-      console.error(err);
-      alert("Failed to load video page.");
-    }
+    gotoPage(`${REPO_BASE}/watch.html?${query}`);
   }
 
   updateAccountPill();
