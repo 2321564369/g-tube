@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Open Galaxy</title>
+
+<style>
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 20px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .glow {
+    color: #b366ff;
+    font-family: Arial, sans-serif;
+    text-align: center;
+    text-shadow:
+      0 0 10px #b366ff,
+      0 0 20px #b366ff,
+      0 0 40px #9933ff,
+      0 0 80px #6600cc;
+    animation: pulse 2s infinite alternate;
+  }
+
+  .small { font-size: 28px; opacity: 0.8; }
+  .big { font-size: 64px; }
+
+  @keyframes pulse {
+    from {
+      text-shadow:
+        0 0 10px #b366ff,
+        0 0 20px #b366ff,
+        0 0 40px #9933ff,
+        0 0 80px #6600cc;
+    }
+    to {
+      text-shadow:
+        0 0 20px #cc99ff,
+        0 0 40px #cc99ff,
+        0 0 80px #aa66ff,
+        0 0 120px #6600cc;
+    }
+  }
+</style>
+
+<script>
+async function launchLocalGame(url) {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error();
+
+    let content = await response.text();
+
+    const w = window.open("", "_blank");
+    if (!w) {
+      alert("Popup blocked!");
+      return;
+    }
+
+    // fix relative paths
+    const base = `<base href="${url.substring(0, url.lastIndexOf("/") + 1)}">`;
+    content = content.replace("<head>", `<head>${base}`);
+
+    w.document.open();
+    w.document.write(content);
+    w.document.close();
+
+  } catch {
+    alert("Failed to load galaxy.");
+  }
+}
+
+// click anywhere once
+document.addEventListener("click", () => {
+  launchLocalGame("https://raw.githubusercontent.com/2321564369/g-tube/refs/heads/main/index.html");
+}, { once: true });
+</script>
+</head>
+
+<body>
+  <div class="glow small">CLICK ANYWHERE TO</div>
+  <div class="glow big">OPEN GALAXY</div>
+</body>
+</html>
+
+
