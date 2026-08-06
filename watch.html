@@ -6,10 +6,7 @@
 <title>Galaxy-tube</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-* {
-  margin: 0; padding: 0; box-sizing: border-box;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
 body { background: #000; color: #fff; min-height: 100vh; }
 
 .galaxy {
@@ -21,8 +18,7 @@ body { background: #000; color: #fff; min-height: 100vh; }
   z-index: -2;
 }
 .galaxy::after {
-  content: "";
-  position: absolute; inset: 0;
+  content: ""; position: absolute; inset: 0;
   background-image:
     radial-gradient(1px 1px at 50px 80px, #fff, transparent),
     radial-gradient(1px 1px at 200px 150px, #fff, transparent),
@@ -46,149 +42,67 @@ body { background: #000; color: #fff; min-height: 100vh; }
   box-shadow: 0 4px 30px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05);
   z-index: 10;
 }
-.logo {
-  font-size: 20px; font-weight: 700; color: #a78bfa;
-  text-shadow: 0 0 10px rgba(167,139,250,0.5);
-  text-decoration: none;
-  white-space: nowrap;
-}
+.logo { font-size: 20px; font-weight: 700; color: #a78bfa; text-shadow: 0 0 10px rgba(167,139,250,0.5); white-space: nowrap; cursor: pointer; }
 .back-link {
-  color: rgba(255,255,255,0.7);
-  text-decoration: none;
-  font-size: 14px;
-  padding: 6px 14px;
-  border-radius: 20px;
-  border: 1px solid rgba(167,139,250,0.2);
-  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.7); font-size: 14px; padding: 6px 14px;
+  border-radius: 20px; border: 1px solid rgba(167,139,250,0.2);
+  background: rgba(255,255,255,0.05); cursor: pointer;
 }
 .back-link:hover { color: #fff; background: rgba(167,139,250,0.1); }
 .current-user {
-  margin-left: auto;
-  font-size: 13px; color: rgba(255,255,255,0.7);
-  cursor: pointer;
-  padding: 6px 14px;
-  background: rgba(255,255,255,0.05);
-  border-radius: 20px;
-  border: 1px solid rgba(167,139,250,0.2);
-  white-space: nowrap;
+  margin-left: auto; font-size: 13px; color: rgba(255,255,255,0.7); cursor: pointer;
+  padding: 6px 14px; background: rgba(255,255,255,0.05); border-radius: 20px;
+  border: 1px solid rgba(167,139,250,0.2); white-space: nowrap;
 }
 .current-user:hover { color: #fff; background: rgba(167,139,250,0.1); }
 
-.layout {
-  display: flex;
-  gap: 24px;
-  padding: 20px;
-  align-items: flex-start;
-}
-
+.layout { display: flex; gap: 24px; padding: 20px; align-items: flex-start; }
 .main-col { flex: 1; min-width: 0; max-width: 900px; }
-
 .player-shell {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  background: #000;
-  border-radius: 16px;
-  overflow: hidden;
-  border: 1px solid rgba(167,139,250,0.15);
-  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 16px; overflow: hidden;
+  border: 1px solid rgba(167,139,250,0.15); box-shadow: 0 10px 40px rgba(0,0,0,0.5);
 }
 .player-shell video { width: 100%; height: 100%; display: block; }
-
-.video-title {
-  font-size: 22px;
-  font-weight: 700;
-  color: #fff;
-  margin-top: 18px;
-  text-shadow: 0 0 10px rgba(167,139,250,0.2);
-}
-
+.video-title { font-size: 22px; font-weight: 700; color: #fff; margin-top: 18px; text-shadow: 0 0 10px rgba(167,139,250,0.2); }
 .video-info-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 15px;
-  margin-top: 14px;
-  padding: 14px 18px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(167,139,250,0.1);
-  border-radius: 14px;
+  display: flex; align-items: center; justify-content: space-between; gap: 15px;
+  margin-top: 14px; padding: 14px 18px; background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(167,139,250,0.1); border-radius: 14px;
 }
 .channel-block { display: flex; align-items: center; gap: 12px; }
 .channel-avatar {
-  width: 44px; height: 44px; border-radius: 50%;
-  background: linear-gradient(135deg, #7c3aed, #5b21b6);
-  display: flex; align-items: center; justify-content: center;
-  font-weight: 700; font-size: 16px; color: #fff;
+  width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #7c3aed, #5b21b6);
+  display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; color: #fff;
   box-shadow: 0 4px 20px rgba(124,58,237,0.3);
 }
 .channel-name { font-weight: 600; font-size: 15px; color: #fff; }
-
 .action-buttons { display: flex; gap: 10px; }
 .action-btn {
-  display: flex; align-items: center; gap: 8px;
-  padding: 9px 16px;
-  border-radius: 20px;
-  border: 1px solid rgba(167,139,250,0.25);
-  background: rgba(255,255,255,0.05);
-  color: rgba(255,255,255,0.85);
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-  transition: all 0.2s ease;
+  display: flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: 20px;
+  border: 1px solid rgba(167,139,250,0.25); background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.85);
+  cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s ease;
 }
 .action-btn:hover { background: rgba(167,139,250,0.15); color: #fff; }
-.action-btn.active {
-  background: rgba(167,139,250,0.25);
-  border-color: rgba(167,139,250,0.6);
-  color: #a78bfa;
-}
+.action-btn.active { background: rgba(167,139,250,0.25); border-color: rgba(167,139,250,0.6); color: #a78bfa; }
 .action-btn.dislike.active { background: rgba(239,68,68,0.2); border-color: rgba(239,68,68,0.5); color: #f87171; }
 
-/* Sidebar of similar videos */
 .side-col { width: 340px; flex-shrink: 0; }
-.side-title {
-  font-size: 15px; font-weight: 700; color: rgba(255,255,255,0.85);
-  margin-bottom: 12px;
-}
-.similar-item {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 12px;
-  cursor: pointer;
-  border-radius: 10px;
-  padding: 6px;
-  transition: background 0.2s ease;
-}
+.side-title { font-size: 15px; font-weight: 700; color: rgba(255,255,255,0.85); margin-bottom: 12px; }
+.similar-item { display: flex; gap: 10px; margin-bottom: 12px; cursor: pointer; border-radius: 10px; padding: 6px; transition: background 0.2s ease; }
 .similar-item:hover { background: rgba(167,139,250,0.08); }
 .similar-thumb {
-  width: 140px; height: 78px;
-  border-radius: 8px;
-  overflow: hidden;
-  flex-shrink: 0;
-  background: #2a1b69;
-  position: relative;
-  border: 1px solid rgba(167,139,250,0.15);
+  width: 140px; height: 78px; border-radius: 8px; overflow: hidden; flex-shrink: 0;
+  background: #2a1b69; position: relative; border: 1px solid rgba(167,139,250,0.15);
 }
 .similar-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.similar-duration {
-  position: absolute; bottom: 4px; right: 4px;
-  background: rgba(0,0,0,0.8); color: #fff;
-  font-size: 10px; padding: 1px 4px; border-radius: 3px;
-}
+.similar-duration { position: absolute; bottom: 4px; right: 4px; background: rgba(0,0,0,0.8); color: #fff; font-size: 10px; padding: 1px 4px; border-radius: 3px; }
 .similar-meta { flex: 1; min-width: 0; }
-.similar-meta .t {
-  font-size: 13px; font-weight: 600; color: #fff;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-  overflow: hidden; line-height: 1.3;
-}
+.similar-meta .t { font-size: 13px; font-weight: 600; color: #fff; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.3; }
 .similar-meta .c { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 4px; }
 
 .empty { text-align: center; padding: 30px; color: rgba(255,255,255,0.6); }
 
-@media (max-width: 900px) {
-  .layout { flex-direction: column; }
-  .side-col { width: 100%; }
-}
+@media (max-width: 900px) { .layout { flex-direction: column; } .side-col { width: 100%; } }
 </style>
 </head>
 <body>
@@ -196,8 +110,8 @@ body { background: #000; color: #fff; min-height: 100vh; }
 <div class="galaxy"></div>
 
 <div class="topbar">
-  <a href="index.html" class="logo">🌌 Galaxy-tube</a>
-  <a href="index.html" class="back-link">← Home</a>
+  <div class="logo" id="logoLink">🌌 Galaxy-tube</div>
+  <div class="back-link" id="backLink">← Home</div>
   <div class="current-user" id="accountPill" onclick="promptUsername()">Sign in</div>
 </div>
 
@@ -233,9 +147,12 @@ body { background: #000; color: #fff; min-height: 100vh; }
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxwcXJicmdsYXRwY3l3ZHVna2lkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3OTcwMTAsImV4cCI6MjEwMTM3MzAxMH0.H4tvl85-IDvsJnICtnTy7dI1k-u8Xn9diVDPnLEG9a8";
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   const VIDEO_BUCKET_URL = `${SUPABASE_URL}/storage/v1/object/public/videos`;
+  const REPO_BASE = "https://cdn.jsdelivr.net/gh/2321564369/g-tube@main";
 
   const params = new URLSearchParams(location.search);
-  const videoId = params.get("id");
+  const videoIdParam = params.get("id");
+  const youtubeIdParam = params.get("youtube_id");
+  const titleParam = params.get("title");
 
   function formatDuration(seconds) {
     if (!seconds) return "";
@@ -244,7 +161,6 @@ body { background: #000; color: #fff; min-height: 100vh; }
     return `${m}:${s}`;
   }
   function initial(str) { return (str || "?").trim().charAt(0).toUpperCase(); }
-
   function getUsername() { return localStorage.getItem("galaxy_video_username"); }
 
   function promptUsername() {
@@ -259,26 +175,71 @@ body { background: #000; color: #fff; min-height: 100vh; }
     document.getElementById("accountPill").textContent = getUsername() || "Sign in";
   }
 
-  let currentVideo = null;
+  // ---------- SHARED CROSS-PAGE NAVIGATION (same pattern as launchLocalGame) ----------
+  async function gotoPage(url) {
+    try {
+      const [baseUrl, queryString] = url.split("?");
+      const response = await fetch(baseUrl);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const html = await response.text();
+
+      const blob = new Blob([html], { type: "text/html" });
+      const blobUrl = URL.createObjectURL(blob) + (queryString ? `?${queryString}` : "");
+
+      window.location.replace(blobUrl);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to load page: " + err.message);
+    }
+  }
+
+  document.getElementById("logoLink").addEventListener("click", () => gotoPage(`${REPO_BASE}/index.html`));
+  document.getElementById("backLink").addEventListener("click", () => gotoPage(`${REPO_BASE}/index.html`));
+
+  let currentVideoId = videoIdParam;
+  let pollTimer = null;
 
   async function loadVideo() {
-    if (!videoId) {
-      document.getElementById("playerShell").innerHTML = `<div class="empty">No video specified.</div>`;
+    if (videoIdParam) {
+      const { data: video, error } = await sb.from("videos").select("*").eq("id", videoIdParam).maybeSingle();
+      if (error || !video) {
+        document.getElementById("playerShell").innerHTML = `<div class="empty">Video not found.</div>`;
+        return;
+      }
+      renderVideo(video);
       return;
     }
 
-    const { data: video, error } = await sb
-      .from("videos")
-      .select("*")
-      .eq("id", videoId)
-      .single();
+    if (youtubeIdParam) {
+      const { data: existing } = await sb
+        .from("videos").select("*")
+        .eq("youtube_id", youtubeIdParam).eq("status", "ready").maybeSingle();
 
-    if (error || !video) {
-      document.getElementById("playerShell").innerHTML = `<div class="empty">Video not found.</div>`;
+      if (existing) {
+        renderVideo(existing);
+        return;
+      }
+
+      // Not ready yet — poller is (or should be) working on it. Poll until it shows up.
+      document.getElementById("playerShell").innerHTML = `<div class="empty">Downloading video, please wait...</div>`;
+      document.getElementById("videoTitle").textContent = titleParam || "";
+      pollTimer = setInterval(async () => {
+        const { data: ready } = await sb
+          .from("videos").select("*")
+          .eq("youtube_id", youtubeIdParam).eq("status", "ready").maybeSingle();
+        if (ready) {
+          clearInterval(pollTimer);
+          renderVideo(ready);
+        }
+      }, 3000);
       return;
     }
 
-    currentVideo = video;
+    document.getElementById("playerShell").innerHTML = `<div class="empty">No video specified.</div>`;
+  }
+
+  async function renderVideo(video) {
+    currentVideoId = video.id;
 
     document.getElementById("playerShell").innerHTML = `
       <video controls autoplay src="${VIDEO_BUCKET_URL}/${video.storage_path}"></video>
@@ -292,18 +253,18 @@ body { background: #000; color: #fff; min-height: 100vh; }
       await sb.from("watch_history").insert({ username, video_id: video.id });
     }
 
-    loadReactionCounts();
+    loadReactionState();
     loadSimilar(video);
   }
 
-  async function loadReactionCounts() {
+  async function loadReactionState() {
     const username = getUsername();
-    if (!username) return;
+    if (!username || !currentVideoId) return;
 
     const { data: myReaction } = await sb
       .from("reactions")
       .select("reaction")
-      .eq("video_id", videoId)
+      .eq("video_id", currentVideoId)
       .eq("username", username)
       .maybeSingle();
 
@@ -315,9 +276,10 @@ body { background: #000; color: #fff; min-height: 100vh; }
   async function react(type) {
     const username = getUsername();
     if (!username) { promptUsername(); return; }
+    if (!currentVideoId) return;
 
     await sb.from("reactions").upsert(
-      { username, video_id: videoId, reaction: type },
+      { username, video_id: currentVideoId, reaction: type },
       { onConflict: "username,video_id" }
     );
 
@@ -329,21 +291,22 @@ body { background: #000; color: #fff; min-height: 100vh; }
   async function toggleWatchLater() {
     const username = getUsername();
     if (!username) { promptUsername(); return; }
+    if (!currentVideoId) return;
 
     const btn = document.getElementById("watchLaterBtn");
     const { data: existing } = await sb
       .from("watch_later")
       .select("*")
       .eq("username", username)
-      .eq("video_id", videoId)
+      .eq("video_id", currentVideoId)
       .maybeSingle();
 
     if (existing) {
-      await sb.from("watch_later").delete().eq("username", username).eq("video_id", videoId);
+      await sb.from("watch_later").delete().eq("username", username).eq("video_id", currentVideoId);
       btn.textContent = "＋ Watch Later";
       btn.classList.remove("active");
     } else {
-      await sb.from("watch_later").insert({ username, video_id: videoId });
+      await sb.from("watch_later").insert({ username, video_id: currentVideoId });
       btn.textContent = "✓ Saved";
       btn.classList.add("active");
     }
@@ -364,9 +327,9 @@ body { background: #000; color: #fff; min-height: 100vh; }
     if (!similar.length) { list.innerHTML = `<div class="empty">No similar videos yet.</div>`; return; }
 
     list.innerHTML = similar.map(v => `
-      <div class="similar-item" onclick="location.href='watch.html?id=${v.id}'">
+      <div class="similar-item" data-id="${v.id}">
         <div class="similar-thumb">
-          <img src="${v.thumbnail_url || ''}" alt="${v.title}">
+          <img src="${v.thumbnail_url || ''}" alt="">
           <div class="similar-duration">${formatDuration(v.duration_seconds)}</div>
         </div>
         <div class="similar-meta">
@@ -375,6 +338,10 @@ body { background: #000; color: #fff; min-height: 100vh; }
         </div>
       </div>
     `).join("");
+
+    list.querySelectorAll(".similar-item").forEach(el => {
+      el.addEventListener("click", () => gotoPage(`${REPO_BASE}/watch.html?id=${el.dataset.id}`));
+    });
   }
 
   updateAccountPill();
