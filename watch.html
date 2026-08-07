@@ -148,10 +148,14 @@ body { background: #000; color: #fff; min-height: 100vh; }
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   const VIDEO_BUCKET_URL = `${SUPABASE_URL}/storage/v1/object/public/videos`;
   const REPO_BASE = "https://raw.githubusercontent.com/2321564369/g-tube/main";
-  const params = new URLSearchParams(location.search);
-  const videoIdParam = params.get("id");
-  const youtubeIdParam = params.get("youtube_id");
-  const titleParam = params.get("title");
+
+  // Params arrive via an injected global (set by gotoPage before this script
+  // runs) since location.search on a document.write()'d page reflects the
+  // window's real URL, not the content we wrote into it.
+  const params = window.__GALAXY_PARAMS || Object.fromEntries(new URLSearchParams(location.search));
+  const videoIdParam = params.id;
+  const youtubeIdParam = params.youtube_id;
+  const titleParam = params.title;
 
   function formatDuration(seconds) {
     if (!seconds) return "";
@@ -174,26 +178,29 @@ body { background: #000; color: #fff; min-height: 100vh; }
     document.getElementById("accountPill").textContent = getUsername() || "Sign in";
   }
 
-  // ---------- SHARED CROSS-PAGE NAVIGATION (same pattern as launchLocalGame) ----------
-  async function gotoPage(url) {
+  // ---------- SHARED CROSS-PAGE NAVIGATION ----------
+  async function gotoPage(pageFile, pageParams = {}) {
     try {
-      const [baseUrl, queryString] = url.split("?");
-      const response = await fetch(baseUrl);
+      const response = await fetch(`${REPO_BASE}/${pageFile}`);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const html = await response.text();
+      let content = await response.text();
 
-      const blob = new Blob([html], { type: "text/html" });
-      const blobUrl = URL.createObjectURL(blob) + (queryString ? `?${queryString}` : "");
+      const paramsScript = `<script>window.__GALAXY_PARAMS = ${JSON.stringify(pageParams)};<\/script>`;
+      content = content.replace("<head>", `<head>${paramsScript}`);
 
-      window.location.replace(blobUrl);
+      const w = window.open("", "galaxyTubeWindow");
+      if (!w) { alert("Popup blocked!"); return; }
+      w.document.open();
+      w.document.write(content);
+      w.document.close();
     } catch (err) {
       console.error(err);
       alert("Failed to load page: " + err.message);
     }
   }
 
-  document.getElementById("logoLink").addEventListener("click", () => gotoPage(`${REPO_BASE}/index.html`));
-  document.getElementById("backLink").addEventListener("click", () => gotoPage(`${REPO_BASE}/index.html`));
+  document.getElementById("logoLink").addEventListener("click", () => gotoPage("index.html"));
+  document.getElementById("backLink").addEventListener("click", () => gotoPage("index.html"));
 
   let currentVideoId = videoIdParam;
   let pollTimer = null;
@@ -219,7 +226,6 @@ body { background: #000; color: #fff; min-height: 100vh; }
         return;
       }
 
-      // Not ready yet — poller is (or should be) working on it. Poll until it shows up.
       document.getElementById("playerShell").innerHTML = `<div class="empty">Downloading video, please wait...</div>`;
       document.getElementById("videoTitle").textContent = titleParam || "";
       pollTimer = setInterval(async () => {
@@ -339,7 +345,7 @@ body { background: #000; color: #fff; min-height: 100vh; }
     `).join("");
 
     list.querySelectorAll(".similar-item").forEach(el => {
-      el.addEventListener("click", () => gotoPage(`${REPO_BASE}/watch.html?id=${el.dataset.id}`));
+      el.addEventListener("click", () => gotoPage("watch.html", { id: el.dataset.id }));
     });
   }
 
