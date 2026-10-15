@@ -111,7 +111,8 @@ body { background: #000; color: #fff; min-height: 100vh; }
 <div class="topbar">
   <div class="logo" id="logoLink">🌌 Galaxy-tube</div>
   <div class="back-link" id="backLink">← Home</div>
-  <div class="current-user" id="accountPill" title="Click to set your YouTube API key">Set API key</div>
+  <div class="current-user" id="accountPill" title="Connect your YouTube account">Connect YouTube</div>
+  <div class="current-user" id="apiKeyPill" title="Optional: set a YouTube Data API key">Set API key</div>
 </div>
 
 <div class="layout">
@@ -159,103 +160,259 @@ body { background: #000; color: #fff; min-height: 100vh; }
   }
 })();
 </script>
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
-(function(){
-const API_BASE="https://www.googleapis.com/youtube/v3";
-const API_KEY_STORAGE="galaxy_youtube_api_key";
-const params=window.__GALAXY_PARAMS||Object.fromEntries(new URLSearchParams(location.search));
-const videoId=String(params.youtube_id||params.id||"");
-const fallbackTitle=String(params.title||"YouTube video");
-function apiKey(){return localStorage.getItem(API_KEY_STORAGE)||"";}
-function promptApiKey(){
- const key=prompt("Enter your YouTube Data API v3 key:",apiKey());
- if(key===null)return;
- if(key.trim())localStorage.setItem(API_KEY_STORAGE,key.trim());else localStorage.removeItem(API_KEY_STORAGE);
- loadVideo();
-}
-function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
-async function ytApi(path,params){
- if(!apiKey())throw new Error("No API key set. Click Set API key in the top-right corner.");
- const url=new URL(API_BASE+"/"+path);
- Object.entries({...params,key:apiKey()}).forEach(([k,v])=>url.searchParams.set(k,v));
- const r=await fetch(url);const data=await r.json();
- if(!r.ok||data.error)throw new Error(data.error?.message||"YouTube API error "+r.status);
- return data;
-}
-async function gotoPage(file,extra={}){if(!window.GalaxyPageEngine)throw new Error("Page engine is still loading.");return window.GalaxyPageEngine.loadPage(file,extra);}
-document.getElementById("logoLink").addEventListener("click",()=>gotoPage("index.html"));
-document.getElementById("backLink").addEventListener("click",()=>gotoPage("index.html"));
-document.getElementById("accountPill").onclick=promptApiKey;
-const localKey="galaxy_local_video_data";
-function localData(){try{return JSON.parse(localStorage.getItem(localKey)||"{}");}catch{return {};}}
-function updateButtons(){
- const d=localData()[videoId]||{};
- document.getElementById("likeBtn").classList.toggle("active",d.reaction==="like");
- document.getElementById("dislikeBtn").classList.toggle("active",d.reaction==="dislike");
- document.getElementById("watchLaterBtn").classList.toggle("active",!!d.watchLater);
- document.getElementById("watchLaterBtn").textContent=d.watchLater?"✓ Saved":"＋ Watch Later";
-}
-function react(type){
- if(!videoId)return;
- const all=localData();all[videoId]=all[videoId]||{};
- all[videoId].reaction=all[videoId].reaction===type?null:type;
- localStorage.setItem(localKey,JSON.stringify(all));updateButtons();
-}
-function toggleWatchLater(){
- if(!videoId)return;
- const all=localData();all[videoId]=all[videoId]||{};all[videoId].watchLater=!all[videoId].watchLater;
- localStorage.setItem(localKey,JSON.stringify(all));updateButtons();
-}
-function renderPlayer(title,channel){
- document.getElementById("playerShell").innerHTML='<iframe src="https://www.youtube-nocookie.com/embed/'+encodeURIComponent(videoId)+'?autoplay=1&rel=0" title="'+esc(title)+'" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" style="width:100%;height:100%;border:0;display:block"></iframe>';
- document.getElementById("videoTitle").textContent=title;
- document.getElementById("channelAvatar").textContent=(channel||"?").trim().charAt(0).toUpperCase();
- document.getElementById("channelName").textContent=channel||"YouTube";
-}
-async function loadSimilar(query){
- const list=document.getElementById("similarList");
- if(!apiKey()){list.innerHTML='<div class="empty">Set an API key to load similar videos.</div>';return;}
- try{
-  const s=await ytApi("search",{part:"snippet",type:"video",maxResults:8,q:query});
-  const ids=(s.items||[]).map(x=>x.id?.videoId).filter(id=>id&&id!==videoId);
-  if(!ids.length){list.innerHTML='<div class="empty">No similar videos found.</div>';return;}
-  const d=await ytApi("videos",{part:"snippet",id:ids.join(",")});
-  list.innerHTML=(d.items||[]).map(v=>{
-   const title=v.snippet?.title||"YouTube video";
-   const thumb=v.snippet?.thumbnails?.medium?.url||v.snippet?.thumbnails?.default?.url||"";
-   return '<div class="similar-item" data-id="'+esc(v.id)+'" data-title="'+esc(title)+'"><div class="similar-thumb"><img src="'+esc(thumb)+'" alt=""></div><div class="similar-meta"><div class="t">'+esc(title)+'</div><div class="c">'+esc(v.snippet?.channelTitle||"Unknown channel")+'</div></div></div>';
-  }).join("");
-  list.querySelectorAll(".similar-item").forEach(el=>el.addEventListener("click",()=>gotoPage("watch.html",{youtube_id:el.dataset.id,title:el.dataset.title})));
- }catch(e){console.error("[YouTube API similar videos]",e);list.innerHTML='<div class="empty">Could not load similar videos: '+esc(e.message)+'</div>';}
-}
-async function loadVideo(){
- document.getElementById("accountPill").textContent=apiKey()?"API key set":"Set API key";
- if(!/^[a-zA-Z0-9_-]{11}$/.test(videoId)){
-  document.getElementById("playerShell").innerHTML='<div class="empty">No valid YouTube video was specified.</div>';
-  document.getElementById("videoTitle").textContent=fallbackTitle;
-  document.getElementById("similarList").innerHTML='<div class="empty">No video selected.</div>';return;
- }
- let title=fallbackTitle,channel="YouTube";
- renderPlayer(title,channel);updateButtons();
- if(apiKey()){
-  try{
-   const d=await ytApi("videos",{part:"snippet",id:videoId});
-   if(d.items?.[0]){
-    title=d.items[0].snippet?.title||title;channel=d.items[0].snippet?.channelTitle||channel;
-    document.getElementById("videoTitle").textContent=title;
-    document.getElementById("channelAvatar").textContent=channel.charAt(0).toUpperCase();
-    document.getElementById("channelName").textContent=channel;
-   }
-  }catch(e){console.error("[YouTube API video details]",e);}
-  loadSimilar(title+" "+channel);
- }else{
-  document.getElementById("similarList").innerHTML='<div class="empty">Set an API key to load similar videos and metadata.</div>';
- }
-}
-window.react = react;
-window.toggleWatchLater = toggleWatchLater;
-updateButtons();loadVideo();
+(function () {
+  "use strict";
+  const API_BASE = "https://www.googleapis.com/youtube/v3";
+  const API_KEY_STORAGE = "galaxy_youtube_api_key";
+  const TOKEN_STORAGE = "galaxy_youtube_access_token";
+  const TOKEN_EXPIRY_STORAGE = "galaxy_youtube_access_token_expiry";
+  const CLIENT_ID = "1069377632556-9g29f27ls1160aj27u4fdrk2sekh4q6k.apps.googleusercontent.com";
+  const SCOPE = "https://www.googleapis.com/auth/youtube.readonly";
+  let tokenClient = null;
+  let authCallback = null;
+
+  function apiKey() { return localStorage.getItem(API_KEY_STORAGE) || ""; }
+  function token() {
+    const value = sessionStorage.getItem(TOKEN_STORAGE) || "";
+    const expiry = Number(sessionStorage.getItem(TOKEN_EXPIRY_STORAGE) || 0);
+    return value && Date.now() < expiry - 30000 ? value : "";
+  }
+  function signedIn() { return !!token(); }
+  function setToken(response) {
+    if (!response || !response.access_token) throw new Error("Google did not return an access token.");
+    sessionStorage.setItem(TOKEN_STORAGE, response.access_token);
+    sessionStorage.setItem(TOKEN_EXPIRY_STORAGE, String(Date.now() + Number(response.expires_in || 3600) * 1000));
+  }
+  function clearToken() {
+    const old = sessionStorage.getItem(TOKEN_STORAGE);
+    sessionStorage.removeItem(TOKEN_STORAGE);
+    sessionStorage.removeItem(TOKEN_EXPIRY_STORAGE);
+    if (old && window.google && google.accounts && google.accounts.oauth2) {
+      try { google.accounts.oauth2.revoke(old, function () {}); } catch (_) {}
+    }
+    updateAccountButtons();
+  }
+  function updateAccountButtons() {
+    const account = document.getElementById("accountPill");
+    if (account) account.textContent = signedIn() ? "YouTube connected · Sign out" : "Connect YouTube";
+    const keyButton = document.getElementById("apiKeyPill");
+    if (keyButton) keyButton.textContent = apiKey() ? "API key set" : "Set API key";
+  }
+  function promptApiKey() {
+    const key = prompt("Enter your YouTube Data API v3 key (optional if signed in):", apiKey());
+    if (key === null) return;
+    if (key.trim()) localStorage.setItem(API_KEY_STORAGE, key.trim());
+    else localStorage.removeItem(API_KEY_STORAGE);
+    updateAccountButtons();
+    if (typeof window.loadSuggestions === "function") window.loadSuggestions();
+    if (typeof window.loadVideo === "function") window.loadVideo();
+  }
+  function connect() {
+    if (signedIn()) {
+      if (confirm("Disconnect your YouTube account from Galaxy-tube?")) {
+        clearToken();
+        if (typeof window.loadSuggestions === "function") window.loadSuggestions();
+      }
+      return;
+    }
+    if (!window.google || !google.accounts || !google.accounts.oauth2) {
+      alert("Google sign-in is still loading. Wait a moment and try again.");
+      return;
+    }
+    if (!tokenClient) {
+      tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: SCOPE,
+        callback: function (response) {
+          if (response.error) {
+            alert("Google authorization failed: " + response.error);
+            return;
+          }
+          try {
+            setToken(response);
+            updateAccountButtons();
+            if (typeof window.loadSuggestions === "function") window.loadSuggestions();
+            if (typeof window.loadVideo === "function") window.loadVideo();
+          } catch (e) { alert(e.message || String(e)); }
+        },
+        error_callback: function (error) {
+          alert("Google sign-in could not open. Try allowing pop-ups, then retry. " + (error && error.message ? error.message : ""));
+        }
+      });
+    }
+    tokenClient.requestAccessToken({ prompt: "consent" });
+  }
+  async function ytApi(path, params) {
+    const accessToken = token();
+    if (!apiKey() && !accessToken) throw new Error("Connect your YouTube account or set a YouTube Data API v3 key.");
+    const url = new URL(API_BASE + "/" + path);
+    Object.entries(params || {}).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== "") url.searchParams.set(k, Array.isArray(v) ? v.join(",") : String(v));
+    });
+    if (apiKey()) url.searchParams.set("key", apiKey());
+    const headers = accessToken ? { Authorization: "Bearer " + accessToken } : {};
+    const response = await fetch(url, { headers });
+    const data = await response.json();
+    if (!response.ok || data.error) {
+      const reason = data.error && data.error.errors && data.error.errors[0] && data.error.errors[0].reason;
+      if (response.status === 401 || reason === "authError") {
+        sessionStorage.removeItem(TOKEN_STORAGE);
+        sessionStorage.removeItem(TOKEN_EXPIRY_STORAGE);
+        updateAccountButtons();
+      }
+      throw new Error(data.error && data.error.message || "YouTube API error " + response.status);
+    }
+    return data;
+  }
+  async function personalizedVideos() {
+    if (!signedIn()) return [];
+    const subs = await ytApi("subscriptions", { part: "snippet,contentDetails", mine: "true", maxResults: 50, order: "relevance" });
+    const channelIds = [...new Set((subs.items || []).map(x => x.snippet && x.snippet.resourceId && x.snippet.resourceId.channelId).filter(Boolean))];
+    if (!channelIds.length) return [];
+    const channels = await ytApi("channels", { part: "snippet,contentDetails", id: channelIds.slice(0, 50).join(",") });
+    const sources = (channels.items || []).map(c => ({
+      id: c.id,
+      name: c.snippet && c.snippet.title || "Subscribed channel",
+      uploads: c.contentDetails && c.contentDetails.relatedPlaylists && c.contentDetails.relatedPlaylists.uploads
+    })).filter(c => c.uploads).slice(0, 8);
+    const batches = await Promise.all(sources.map(async c => {
+      try {
+        const p = await ytApi("playlistItems", { part: "snippet,contentDetails", playlistId: c.uploads, maxResults: 6 });
+        return (p.items || []).map(item => ({
+          youtube_id: item.contentDetails && item.contentDetails.videoId,
+          title: item.snippet && item.snippet.title || "Untitled",
+          channel: c.name,
+          thumbnail_url: item.snippet && item.snippet.thumbnails && ((item.snippet.thumbnails.high || item.snippet.thumbnails.medium || item.snippet.thumbnails.default || {}).url) || "",
+          duration_seconds: 0,
+          is_short: false
+        })).filter(v => v.youtube_id);
+      } catch (e) {
+        console.warn("[Galaxy-tube] Could not load uploads for " + c.name, e);
+        return [];
+      }
+    }));
+    const candidates = batches.flat().filter((v, i, a) => a.findIndex(x => x.youtube_id === v.youtube_id) === i);
+    if (!candidates.length) return [];
+    const details = await ytApi("videos", { part: "snippet,contentDetails", id: candidates.slice(0, 50).map(v => v.youtube_id).join(",") });
+    const byId = new Map((details.items || []).map(v => [v.id, v]));
+    return candidates.map(v => {
+      const d = byId.get(v.youtube_id);
+      const duration = d && d.contentDetails && d.contentDetails.duration || "";
+      const m = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+      const seconds = m ? +(m[1] || 0) * 3600 + +(m[2] || 0) * 60 + +(m[3] || 0) : 0;
+      return {
+        ...v,
+        title: d && d.snippet && d.snippet.title || v.title,
+        channel: d && d.snippet && d.snippet.channelTitle || v.channel,
+        thumbnail_url: d && d.snippet && d.snippet.thumbnails && ((d.snippet.thumbnails.high || d.snippet.thumbnails.medium || {}).url) || v.thumbnail_url,
+        duration_seconds: seconds,
+        is_short: seconds > 0 && seconds <= 60
+      };
+    }).sort(() => Math.random() - 0.5);
+  }
+  document.addEventListener("DOMContentLoaded", function () {
+    const account = document.getElementById("accountPill");
+    if (account) account.onclick = connect;
+    const keyButton = document.getElementById("apiKeyPill");
+    if (keyButton) keyButton.onclick = promptApiKey;
+    updateAccountButtons();
+  });
+  window.GalaxyYouTubeAuth = Object.freeze({
+    apiKey, token, signedIn, connect, clearToken, updateAccountButtons, ytApi, personalizedVideos
+  });
+  window.GalaxyYouTubeApi = Object.freeze({ ytApi, apiKey });
 })();
+</script>
+
+<script>
+(function () {
+  "use strict";
+  const params = window.__GALAXY_PARAMS || Object.fromEntries(new URLSearchParams(location.search));
+  const videoId = String(params.youtube_id || params.id || "");
+  const fallbackTitle = String(params.title || "YouTube video");
+  const auth = () => window.GalaxyYouTubeAuth;
+  function esc(v) { return String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+  async function ytApi(path, query) { return auth().ytApi(path, query); }
+  function gotoPage(file, extra) {
+    if (!window.GalaxyPageEngine) throw new Error("Page engine is still loading.");
+    return window.GalaxyPageEngine.loadPage(file, extra || {});
+  }
+  document.getElementById("logoLink").addEventListener("click", () => gotoPage("index.html"));
+  document.getElementById("backLink").addEventListener("click", () => gotoPage("index.html"));
+  const localKey = "galaxy_local_video_data";
+  function localData() { try { return JSON.parse(localStorage.getItem(localKey) || "{}"); } catch (_) { return {}; } }
+  function updateButtons() {
+    const d = localData()[videoId] || {};
+    document.getElementById("likeBtn").classList.toggle("active", d.reaction === "like");
+    document.getElementById("dislikeBtn").classList.toggle("active", d.reaction === "dislike");
+    document.getElementById("watchLaterBtn").classList.toggle("active", !!d.watchLater);
+    document.getElementById("watchLaterBtn").textContent = d.watchLater ? "✓ Saved" : "＋ Watch Later";
+  }
+  function react(type) {
+    if (!videoId) return;
+    const all = localData(); all[videoId] = all[videoId] || {};
+    all[videoId].reaction = all[videoId].reaction === type ? null : type;
+    localStorage.setItem(localKey, JSON.stringify(all)); updateButtons();
+  }
+  function toggleWatchLater() {
+    if (!videoId) return;
+    const all = localData(); all[videoId] = all[videoId] || {};
+    all[videoId].watchLater = !all[videoId].watchLater;
+    localStorage.setItem(localKey, JSON.stringify(all)); updateButtons();
+  }
+  function renderPlayer(title, channel) {
+    document.getElementById("playerShell").innerHTML = '<iframe src="https://www.youtube-nocookie.com/embed/' + encodeURIComponent(videoId) + '?autoplay=1&rel=0" title="' + esc(title) + '" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" style="width:100%;height:100%;border:0;display:block"></iframe>';
+    document.getElementById("videoTitle").textContent = title;
+    document.getElementById("channelAvatar").textContent = (channel || "?").trim().charAt(0).toUpperCase();
+    document.getElementById("channelName").textContent = channel || "YouTube";
+  }
+  async function loadSimilar(query) {
+    const list = document.getElementById("similarList");
+    try {
+      const s = await ytApi("search", { part: "snippet", type: "video", maxResults: 8, q: query });
+      const ids = (s.items || []).map(x => x.id && x.id.videoId).filter(id => id && id !== videoId);
+      if (!ids.length) { list.innerHTML = '<div class="empty">No similar videos found.</div>'; return; }
+      const d = await ytApi("videos", { part: "snippet,contentDetails", id: ids.join(",") });
+      list.innerHTML = (d.items || []).map(v => {
+        const title = v.snippet && v.snippet.title || "YouTube video";
+        const thumb = v.snippet && v.snippet.thumbnails && ((v.snippet.thumbnails.medium || v.snippet.thumbnails.default || {}).url) || "";
+        return '<div class="similar-item" data-id="' + esc(v.id) + '" data-title="' + esc(title) + '"><div class="similar-thumb"><img src="' + esc(thumb) + '" alt=""></div><div class="similar-meta"><div class="t">' + esc(title) + '</div><div class="c">' + esc(v.snippet && v.snippet.channelTitle || "Unknown channel") + '</div></div></div>';
+      }).join("");
+      list.querySelectorAll(".similar-item").forEach(el => el.addEventListener("click", () => gotoPage("watch.html", { youtube_id: el.dataset.id, title: el.dataset.title }));
+    } catch (e) { console.error("[YouTube API similar videos]", e); list.innerHTML = '<div class="empty">Could not load similar videos: ' + esc(e.message) + '</div>'; }
+  }
+  async function loadVideo() {
+    auth().updateAccountButtons();
+    if (!/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
+      document.getElementById("playerShell").innerHTML = '<div class="empty">No valid YouTube video was specified.</div>';
+      document.getElementById("videoTitle").textContent = fallbackTitle;
+      document.getElementById("similarList").innerHTML = '<div class="empty">No video selected.</div>'; return;
+    }
+    let title = fallbackTitle, channel = "YouTube";
+    renderPlayer(title, channel); updateButtons();
+    try {
+      const d = await ytApi("videos", { part: "snippet", id: videoId });
+      if (d.items && d.items[0]) {
+        title = d.items[0].snippet && d.items[0].snippet.title || title;
+        channel = d.items[0].snippet && d.items[0].snippet.channelTitle || channel;
+        document.getElementById("videoTitle").textContent = title;
+        document.getElementById("channelAvatar").textContent = channel.charAt(0).toUpperCase();
+        document.getElementById("channelName").textContent = channel;
+      }
+      await loadSimilar(title + " " + channel);
+    } catch (e) {
+      console.warn("[Galaxy-tube] Video details unavailable", e);
+      document.getElementById("similarList").innerHTML = '<div class="empty">Connect YouTube or set an API key to load metadata and similar videos.</div>';
+    }
+  }
+  window.react = react; window.toggleWatchLater = toggleWatchLater; window.loadVideo = loadVideo;
+  window.addEventListener("load", () => setTimeout(loadVideo, 150));
+})();
+</script>
+
 </script>
 
 </body>
