@@ -381,7 +381,7 @@ body { background: #000; color: #fff; min-height: 100vh; }
         const thumb = v.snippet && v.snippet.thumbnails && ((v.snippet.thumbnails.medium || v.snippet.thumbnails.default || {}).url) || "";
         return '<div class="similar-item" data-id="' + esc(v.id) + '" data-title="' + esc(title) + '"><div class="similar-thumb"><img src="' + esc(thumb) + '" alt=""></div><div class="similar-meta"><div class="t">' + esc(title) + '</div><div class="c">' + esc(v.snippet && v.snippet.channelTitle || "Unknown channel") + '</div></div></div>';
       }).join("");
-      list.querySelectorAll(".similar-item").forEach(el => el.addEventListener("click", () => gotoPage("watch.html", { youtube_id: el.dataset.id, title: el.dataset.title }));
+      list.querySelectorAll(".similar-item").forEach(el => el.addEventListener("click", () => gotoPage("watch.html", { youtube_id: el.dataset.id, title: el.dataset.title })));
     } catch (e) { console.error("[YouTube API similar videos]", e); list.innerHTML = '<div class="empty">Could not load similar videos: ' + esc(e.message) + '</div>'; }
   }
   async function loadVideo() {
