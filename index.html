@@ -180,7 +180,7 @@ body { background: #000; color: #fff; min-height: 100vh; }
 <script>
 (async function installGalaxyPageEngine() {
   try {
-    const engineUrl = "https://cdn.jsdelivr.net/gh/2321564369/g-tube@main/page-engine.html";
+    const engineUrl = "https://raw.githubusercontent.com/2321564369/g-tube/main/page-engine.html";
     const response = await fetch(engineUrl, { cache: "no-cache" });
     if (!response.ok) throw new Error("HTTP " + response.status);
     const html = await response.text();
@@ -196,7 +196,7 @@ body { background: #000; color: #fff; min-height: 100vh; }
 })();
 </script>
 
-<script src="https://cdn.jsdelivr.net/gh/2321564369/g-tube@main/galaxy-client.js"></script>
+<script src="https://raw.githubusercontent.com/2321564369/g-tube/main/galaxy-client.js"></script>
 
 <script>
 (function () {
