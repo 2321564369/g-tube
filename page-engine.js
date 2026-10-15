@@ -22,7 +22,7 @@
       let html = await response.text();
       const baseTag = '<base href="' + REPO_BASE + '">';
       const paramsJson = JSON.stringify(params).replace(/</g, "\\u003c");
-      const paramsScript = '<script>window.__GALAXY_PARAMS=' + paramsJson + ';<\\/script>';
+      const paramsScript = '<script>window.__GALAXY_PARAMS=' + paramsJson + ';' + '</scr' + 'ipt>';
 
       if (/<head[^>]*>/i.test(html)) {
         html = html.replace(/<head([^>]*)>/i, function (match) {
