@@ -6,14 +6,27 @@
   <title>Galaxy-tube Page Engine</title>
 </head>
 <body>
-  <!-- Shared raw-HTML page engine for embedded G-Tube sites. -->
+  <!-- Shared embedded page engine. Pages are fetched from jsDelivr, never GitHub Pages. -->
   <script type="text/plain" id="galaxy-engine-source">
 (function () {
   "use strict";
 
-  var REPO_BASE = "https://raw.githubusercontent.com/2321564369/g-tube/main/";
+  var REPO_BASE = "https://cdn.jsdelivr.net/gh/2321564369/g-tube@main/";
 
   function loadPage(pageFile, params) {
+    // A page running inside the generated frame delegates navigation to the
+    // outer engine, which replaces the frame instead of creating nested frames.
+    if (window.parent !== window) {
+      try {
+        var parentEngine = window.parent.GalaxyPageEngine;
+        if (parentEngine && parentEngine !== window.GalaxyPageEngine) {
+          return parentEngine.loadPage(pageFile, params);
+        }
+      } catch (e) {
+        // If the embed host is cross-origin, continue with the local fallback.
+      }
+    }
+
     params = params || {};
     var safePage = String(pageFile || "").replace(/^\/+/, "");
     if (!safePage || safePage.indexOf("..") !== -1 ||
@@ -21,7 +34,6 @@
       return Promise.reject(new Error("Invalid G-Tube page name."));
     }
 
-    // Put navigation data in the URL so it survives the fresh iframe document.
     var target = new URL(safePage, REPO_BASE);
     Object.keys(params).forEach(function (key) {
       var value = params[key];
@@ -36,30 +48,30 @@
         return response.text();
       })
       .then(function (html) {
-        // Scope all page scripts to a new iframe JavaScript realm. The iframe
-        // remains embedded in the host page; no GitHub Pages redirect occurs.
         var frame = document.createElement("iframe");
+        frame.id = "galaxy-page-frame";
         frame.title = "Galaxy-tube";
         frame.style.cssText = "display:block;width:100%;height:100%;min-height:100vh;border:0;background:#000";
         frame.setAttribute("allow", "autoplay; encrypted-media; picture-in-picture; fullscreen");
         frame.setAttribute("allowfullscreen", "");
 
         var oldFrame = document.getElementById("galaxy-page-frame");
-        frame.id = "galaxy-page-frame";
-        if (oldFrame) oldFrame.replaceWith(frame);
-        else {
+        if (oldFrame) {
+          oldFrame.replaceWith(frame);
+        } else {
           document.documentElement.style.cssText = "margin:0;width:100%;height:100%;";
           document.body.style.cssText = "margin:0;width:100%;height:100%;";
           document.body.replaceChildren(frame);
         }
 
         var doc = frame.contentDocument;
-        doc.open();
-        // Ensure relative assets resolve against raw GitHub, and pass URL params
-        // to page scripts using the same __GALAXY_PARAMS contract as before.
+        if (!doc) throw new Error("Could not access the embedded page frame.");
+
         var baseTag = '<base href="' + REPO_BASE + '">';
-        var paramsJson = JSON.stringify(Object.fromEntries(target.searchParams.entries())).replace(/</g, "\\u003c");
-        var paramsScript = '<script>window.__GALAXY_PARAMS=' + paramsJson + ';<\/script>';
+        var paramsJson = JSON.stringify(Object.fromEntries(target.searchParams.entries()))
+          .replace(/</g, "\\u003c");
+        var paramsScript = '<script>window.__GALAXY_PARAMS=' + paramsJson + ';<\\/script>';
+
         if (/<head[^>]*>/i.test(html)) {
           html = html.replace(/<head([^>]*)>/i, function (match) {
             return match + baseTag + paramsScript;
@@ -67,6 +79,8 @@
         } else {
           html = '<head>' + baseTag + paramsScript + '</head>' + html;
         }
+
+        doc.open();
         doc.write(html);
         doc.close();
       });
@@ -75,6 +89,6 @@
   window.GalaxyPageEngine = Object.freeze({ loadPage: loadPage });
 })();
   </script>
-  <p>Galaxy-tube shared raw-HTML engine source. This file is loaded by index.html and watch.html.</p>
+  <p>Galaxy-tube shared embedded page engine.</p>
 </body>
 </html>
