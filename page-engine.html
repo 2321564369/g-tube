@@ -6,15 +6,12 @@
   <title>Galaxy-tube Page Engine</title>
 </head>
 <body>
-  <!-- Shared navigation engine for G-Tube. -->
+  <!-- Shared raw-HTML page engine for embedded G-Tube sites. -->
   <script type="text/plain" id="galaxy-engine-source">
 (function () {
   "use strict";
 
-  // Use the published GitHub Pages site so each navigation creates a fresh
-  // document and JavaScript realm. document.write() reused the old realm and
-  // could cause top-level declarations to collide between pages.
-  var SITE_BASE = "https://2321564369.github.io/g-tube/";
+  var REPO_BASE = "https://raw.githubusercontent.com/2321564369/g-tube/main/";
 
   function loadPage(pageFile, params) {
     params = params || {};
@@ -24,7 +21,8 @@
       return Promise.reject(new Error("Invalid G-Tube page name."));
     }
 
-    var target = new URL(safePage, SITE_BASE);
+    // Put navigation data in the URL so it survives the fresh iframe document.
+    var target = new URL(safePage, REPO_BASE);
     Object.keys(params).forEach(function (key) {
       var value = params[key];
       if (value !== undefined && value !== null) {
@@ -32,14 +30,51 @@
       }
     });
 
-    // Full same-tab navigation resets all page-level JavaScript declarations.
-    window.location.href = target.href;
-    return Promise.resolve();
+    return fetch(target.href, { cache: "no-cache" })
+      .then(function (response) {
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        return response.text();
+      })
+      .then(function (html) {
+        // Scope all page scripts to a new iframe JavaScript realm. The iframe
+        // remains embedded in the host page; no GitHub Pages redirect occurs.
+        var frame = document.createElement("iframe");
+        frame.title = "Galaxy-tube";
+        frame.style.cssText = "display:block;width:100%;height:100%;min-height:100vh;border:0;background:#000";
+        frame.setAttribute("allow", "autoplay; encrypted-media; picture-in-picture; fullscreen");
+        frame.setAttribute("allowfullscreen", "");
+
+        var oldFrame = document.getElementById("galaxy-page-frame");
+        frame.id = "galaxy-page-frame";
+        if (oldFrame) oldFrame.replaceWith(frame);
+        else {
+          document.documentElement.style.cssText = "margin:0;width:100%;height:100%;";
+          document.body.style.cssText = "margin:0;width:100%;height:100%;";
+          document.body.replaceChildren(frame);
+        }
+
+        var doc = frame.contentDocument;
+        doc.open();
+        // Ensure relative assets resolve against raw GitHub, and pass URL params
+        // to page scripts using the same __GALAXY_PARAMS contract as before.
+        var baseTag = '<base href="' + REPO_BASE + '">';
+        var paramsJson = JSON.stringify(Object.fromEntries(target.searchParams.entries())).replace(/</g, "\\u003c");
+        var paramsScript = '<script>window.__GALAXY_PARAMS=' + paramsJson + ';<\/script>';
+        if (/<head[^>]*>/i.test(html)) {
+          html = html.replace(/<head([^>]*)>/i, function (match) {
+            return match + baseTag + paramsScript;
+          });
+        } else {
+          html = '<head>' + baseTag + paramsScript + '</head>' + html;
+        }
+        doc.write(html);
+        doc.close();
+      });
   }
 
   window.GalaxyPageEngine = Object.freeze({ loadPage: loadPage });
 })();
   </script>
-  <p>Galaxy-tube shared navigation engine source. This file is loaded by index.html and watch.html.</p>
+  <p>Galaxy-tube shared raw-HTML engine source. This file is loaded by index.html and watch.html.</p>
 </body>
 </html>
