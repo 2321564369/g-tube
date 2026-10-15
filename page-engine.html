@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Galaxy-tube Page Engine</title>
+</head>
+<body>
+  <!--
+    Shared G-Tube page engine.
+    The main site fetches this HTML file, extracts the script below,
+    and installs it into the current page. This keeps the engine in an
+    HTML file while allowing index.html and watch.html to use it.
+  -->
+  <script type="text/plain" id="galaxy-engine-source">
+(function () {
+  "use strict";
+
+  const REPO_BASE = "https://raw.githubusercontent.com/2321564369/g-tube/main/";
+
+  async function loadPage(pageFile, params = {}) {
+    const safePage = String(pageFile || "").replace(/^\/+/, "");
+    if (!safePage || safePage.includes("..") || !/^[a-zA-Z0-9._/-]+\.html$/.test(safePage)) {
+      throw new Error("Invalid G-Tube page name.");
+    }
+
+    try {
+      const response = await fetch(REPO_BASE + safePage, { cache: "no-cache" });
+      if (!response.ok) throw new Error("HTTP " + response.status);
+
+      let html = await response.text();
+      const baseTag = '<base href="' + REPO_BASE + '">';
+      const paramsJson = JSON.stringify(params).replace(/</g, "\\u003c");
+      const paramsScript = '<script>window.__GALAXY_PARAMS=' + paramsJson + ';' + '</scr' + 'ipt>';
+
+      if (/<head[^>]*>/i.test(html)) {
+        html = html.replace(/<head([^>]*)>/i, function (match) {
+          return match + baseTag + paramsScript;
+        });
+      } else {
+        html = baseTag + paramsScript + html;
+      }
+
+      document.open();
+      document.write(html);
+      document.close();
+    } catch (error) {
+      console.error("[Galaxy Page Engine]", error);
+      alert("Couldn't load " + safePage + ": " + error.message);
+    }
+  }
+
+  window.GalaxyPageEngine = Object.freeze({ loadPage });
+})();
+  </script>
+  <p>Galaxy-tube shared page engine source. This file is loaded by index.html and watch.html.</p>
+</body>
+</html>
