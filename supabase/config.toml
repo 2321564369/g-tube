@@ -1,0 +1,4 @@
+project_id = "g-tube"
+
+[functions.galaxy-api]
+verify_jwt = false
