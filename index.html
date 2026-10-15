@@ -194,6 +194,7 @@ body { background: #000; color: #fff; min-height: 100vh; }
 })();
 </script>
 <script>
+(function(){
 const API_BASE = "https://www.googleapis.com/youtube/v3";
 const API_KEY_STORAGE = "galaxy_youtube_api_key";
 function apiKey(){ return localStorage.getItem(API_KEY_STORAGE) || ""; }
@@ -271,7 +272,10 @@ async function search(){
 function openVideo(id,title){gotoPage("watch.html",{youtube_id:id,title:title}).catch(e=>alert("Could not open video: "+e.message));}
 document.getElementById("accountPill").textContent=apiKey()?"API key set":"Set API key";
 document.getElementById("accountPill").onclick=promptApiKey;
+window.search = search;
+window.loadSuggestions = loadSuggestions;
 loadSuggestions();
+})();
 </script>
 
 </body>
