@@ -6,53 +6,40 @@
   <title>Galaxy-tube Page Engine</title>
 </head>
 <body>
-  <!--
-    Shared G-Tube page engine.
-    The main site fetches this HTML file, extracts the script below,
-    and installs it into the current page. This keeps the engine in an
-    HTML file while allowing index.html and watch.html to use it.
-  -->
+  <!-- Shared navigation engine for G-Tube. -->
   <script type="text/plain" id="galaxy-engine-source">
 (function () {
   "use strict";
 
-  const REPO_BASE = "https://raw.githubusercontent.com/2321564369/g-tube/main/";
+  // Use the published GitHub Pages site so each navigation creates a fresh
+  // document and JavaScript realm. document.write() reused the old realm and
+  // could cause top-level declarations to collide between pages.
+  var SITE_BASE = "https://2321564369.github.io/g-tube/";
 
-  async function loadPage(pageFile, params = {}) {
-    const safePage = String(pageFile || "").replace(/^\/+/, "");
-    if (!safePage || safePage.includes("..") || !/^[a-zA-Z0-9._/-]+\.html$/.test(safePage)) {
-      throw new Error("Invalid G-Tube page name.");
+  function loadPage(pageFile, params) {
+    params = params || {};
+    var safePage = String(pageFile || "").replace(/^\/+/, "");
+    if (!safePage || safePage.indexOf("..") !== -1 ||
+        !/^[a-zA-Z0-9._/-]+\.html$/.test(safePage)) {
+      return Promise.reject(new Error("Invalid G-Tube page name."));
     }
 
-    try {
-      const response = await fetch(REPO_BASE + safePage, { cache: "no-cache" });
-      if (!response.ok) throw new Error("HTTP " + response.status);
-
-      let html = await response.text();
-      const baseTag = '<base href="' + REPO_BASE + '">';
-      const paramsJson = JSON.stringify(params).replace(/</g, "\\u003c");
-      const paramsScript = '<script>window.__GALAXY_PARAMS=' + paramsJson + ';' + '</scr' + 'ipt>';
-
-      if (/<head[^>]*>/i.test(html)) {
-        html = html.replace(/<head([^>]*)>/i, function (match) {
-          return match + baseTag + paramsScript;
-        });
-      } else {
-        html = baseTag + paramsScript + html;
+    var target = new URL(safePage, SITE_BASE);
+    Object.keys(params).forEach(function (key) {
+      var value = params[key];
+      if (value !== undefined && value !== null) {
+        target.searchParams.set(key, String(value));
       }
+    });
 
-      document.open();
-      document.write(html);
-      document.close();
-    } catch (error) {
-      console.error("[Galaxy Page Engine]", error);
-      alert("Couldn't load " + safePage + ": " + error.message);
-    }
+    // Full same-tab navigation resets all page-level JavaScript declarations.
+    window.location.href = target.href;
+    return Promise.resolve();
   }
 
-  window.GalaxyPageEngine = Object.freeze({ loadPage });
+  window.GalaxyPageEngine = Object.freeze({ loadPage: loadPage });
 })();
   </script>
-  <p>Galaxy-tube shared page engine source. This file is loaded by index.html and watch.html.</p>
+  <p>Galaxy-tube shared navigation engine source. This file is loaded by index.html and watch.html.</p>
 </body>
 </html>
