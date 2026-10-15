@@ -1,6 +1,6 @@
 (function () {
   "use strict";
-  const SUPABASE_URL = "https://lpqrbrglatpcywdugkid.supabase.co/rest/v1";
+  const SUPABASE_URL = "https://lpqrbrglatpcywdugkid.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxwcXJicmdsYXRwY3l3ZHVna2lkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3OTcwMTAsImV4cCI6MjEwMTM3MzAxMH0.H4tvl85-IDvsJnICtnTy7dI1k-u8Xn9diVDPnLEG9a8";
   const FUNCTION_URL = SUPABASE_URL.replace(/\/$/, "") + "/functions/v1/galaxy-api";
   const SESSION_KEY = "galaxy_profile_session";
