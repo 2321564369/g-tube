@@ -60,6 +60,9 @@ body { background: #000; color: #fff; min-height: 100vh; }
   border: 1px solid rgba(167,139,250,0.2); white-space: nowrap;
 }
 .current-user:hover { color: #fff; background: rgba(167,139,250,0.1); }
+.network-status { margin-left: auto; font-size: 13px; font-weight: 700; padding: 6px 14px; border-radius: 20px; white-space: nowrap; border: 1px solid; }
+.network-status.online { color: #4ade80; background: rgba(34,197,94,0.10); border-color: rgba(74,222,128,0.35); }
+.network-status.offline { color: #f87171; background: rgba(239,68,68,0.10); border-color: rgba(248,113,113,0.35); }
 
 .app { display: flex; padding: 20px; gap: 20px; }
 .sidebar {
@@ -132,7 +135,7 @@ body { background: #000; color: #fff; min-height: 100vh; }
   </div>
   <div class="current-user" id="accountPill" title="Sign in to your G-Tube profile">Sign in</div>
   <div class="current-user" id="apiKeyPill" title="Create a G-Tube profile with username and PIN">Create profile</div>
-  <div class="current-user" id="apiStatusPill" title="The YouTube API key is kept on the server" onclick="alert('G-Tube never displays the YouTube API key. Set YOUTUBE_API_KEY in Supabase → Edge Functions → Secrets. This label does not confirm that the secret has been configured.')">API key: server-side</div>
+  <div class="network-status online" id="networkStatusPill" role="status" aria-live="polite">🟢 Online</div>
 </div>
 
 <div class="app">
@@ -180,7 +183,7 @@ body { background: #000; color: #fff; min-height: 100vh; }
 <script>
 (async function installGalaxyPageEngine() {
   try {
-    const engineUrl = "https://raw.githubusercontent.com/2321564369/g-tube/main/page-engine.html";
+    const engineUrl = "https://cdn.jsdelivr.net/gh/2321564369/g-tube@main/page-engine.html";
     const response = await fetch(engineUrl, { cache: "no-cache" });
     if (!response.ok) throw new Error("HTTP " + response.status);
     const html = await response.text();
@@ -196,7 +199,7 @@ body { background: #000; color: #fff; min-height: 100vh; }
 })();
 </script>
 
-<script src="https://raw.githubusercontent.com/2321564369/g-tube/main/galaxy-client.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/2321564369/g-tube@main/galaxy-client.js"></script>
 
 <script>
 (function () {
@@ -275,6 +278,17 @@ body { background: #000; color: #fff; min-height: 100vh; }
   }
   window.search = search;
   window.loadSuggestions = loadSuggestions;
+  function updateNetworkStatus() {
+    const pill = document.getElementById("networkStatusPill");
+    if (!pill) return;
+    const online = navigator.onLine;
+    pill.classList.toggle("online", online);
+    pill.classList.toggle("offline", !online);
+    pill.textContent = online ? "🟢 Online" : "🔴 Offline";
+  }
+  window.addEventListener("online", updateNetworkStatus);
+  window.addEventListener("offline", updateNetworkStatus);
+  updateNetworkStatus();
   window.addEventListener("load", () => setTimeout(loadSuggestions, 150));
 })();
 </script>
