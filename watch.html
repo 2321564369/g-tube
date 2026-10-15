@@ -178,26 +178,38 @@ body { background: #000; color: #fff; min-height: 100vh; }
   }
   document.getElementById("logoLink").addEventListener("click", () => gotoPage("index.html"));
   document.getElementById("backLink").addEventListener("click", () => gotoPage("index.html"));
-  const localKey = "galaxy_local_video_data";
-  function localData() { try { return JSON.parse(localStorage.getItem(localKey) || "{}"); } catch (_) { return {}; } }
+  let profileVideoData = {};
+  async function loadProfileData() {
+    if (!auth().signedIn()) { profileVideoData = {}; updateButtons(); return; }
+    try { profileVideoData = await auth().getData("video_data") || {}; }
+    catch (error) { console.warn("[G-Tube profile data]", error); profileVideoData = {}; }
+    updateButtons();
+  }
   function updateButtons() {
-    const d = localData()[videoId] || {};
+    const d = profileVideoData[videoId] || {};
     document.getElementById("likeBtn").classList.toggle("active", d.reaction === "like");
     document.getElementById("dislikeBtn").classList.toggle("active", d.reaction === "dislike");
     document.getElementById("watchLaterBtn").classList.toggle("active", !!d.watchLater);
     document.getElementById("watchLaterBtn").textContent = d.watchLater ? "✓ Saved" : "＋ Watch Later";
   }
-  function react(type) {
-    if (!videoId) return;
-    const all = localData(); all[videoId] = all[videoId] || {};
-    all[videoId].reaction = all[videoId].reaction === type ? null : type;
-    localStorage.setItem(localKey, JSON.stringify(all)); updateButtons();
+  async function saveProfileData() {
+    if (!auth().signedIn()) throw new Error("Sign in to save likes and Watch Later across devices.");
+    await auth().setData("video_data", profileVideoData);
+    updateButtons();
   }
-  function toggleWatchLater() {
+  async function react(type) {
     if (!videoId) return;
-    const all = localData(); all[videoId] = all[videoId] || {};
-    all[videoId].watchLater = !all[videoId].watchLater;
-    localStorage.setItem(localKey, JSON.stringify(all)); updateButtons();
+    if (!auth().signedIn()) { alert("Sign in to your G-Tube profile first."); return; }
+    const d = profileVideoData[videoId] || {};
+    profileVideoData[videoId] = { ...d, reaction: d.reaction === type ? null : type };
+    try { await saveProfileData(); } catch (error) { alert(error.message || String(error)); }
+  }
+  async function toggleWatchLater() {
+    if (!videoId) return;
+    if (!auth().signedIn()) { alert("Sign in to your G-Tube profile first."); return; }
+    const d = profileVideoData[videoId] || {};
+    profileVideoData[videoId] = { ...d, watchLater: !d.watchLater };
+    try { await saveProfileData(); } catch (error) { alert(error.message || String(error)); }
   }
   function renderPlayer(title, channel) {
     document.getElementById("playerShell").innerHTML = '<iframe src="https://www.youtube-nocookie.com/embed/' + encodeURIComponent(videoId) + '?autoplay=1&rel=0" title="' + esc(title) + '" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" style="width:100%;height:100%;border:0;display:block"></iframe>';
@@ -228,7 +240,7 @@ body { background: #000; color: #fff; min-height: 100vh; }
       document.getElementById("similarList").innerHTML = '<div class="empty">No video selected.</div>'; return;
     }
     let title = fallbackTitle, channel = "YouTube";
-    renderPlayer(title, channel); updateButtons();
+    renderPlayer(title, channel); await loadProfileData(); updateButtons();
     try {
       const d = await ytApi("videos", { part: "snippet", id: videoId });
       if (d.items && d.items[0]) {
@@ -241,7 +253,7 @@ body { background: #000; color: #fff; min-height: 100vh; }
       await loadSimilar(title + " " + channel);
     } catch (e) {
       console.warn("[Galaxy-tube] Video details unavailable", e);
-      document.getElementById("similarList").innerHTML = '<div class="empty">Connect YouTube or set an API key to load metadata and similar videos.</div>';
+      document.getElementById("similarList").innerHTML = '<div class="empty">Sign in to your G-Tube profile to load metadata and similar videos.</div>';
     }
   }
   window.react = react; window.toggleWatchLater = toggleWatchLater; window.loadVideo = loadVideo;
