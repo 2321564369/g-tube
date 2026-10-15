@@ -70,7 +70,7 @@
         var baseTag = '<base href="' + REPO_BASE + '">';
         var paramsJson = JSON.stringify(Object.fromEntries(target.searchParams.entries()))
           .replace(/</g, "\\u003c");
-        var paramsScript = '<script>window.__GALAXY_PARAMS=' + paramsJson + ';<\\/script>';
+        var paramsScript = '<script>window.__GALAXY_PARAMS=' + paramsJson + ';<\/script>';
 
         if (/<head[^>]*>/i.test(html)) {
           html = html.replace(/<head([^>]*)>/i, function (match) {
