@@ -142,6 +142,7 @@ body { background: #000; color: #fff; min-height: 100vh; }
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/gh/2321564369/g-tube@main/page-engine.js"></script>
 <script>
   const SUPABASE_URL = "https://lpqrbrglatpcywdugkid.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxwcXJicmdsYXRwY3l3ZHVna2lkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3OTcwMTAsImV4cCI6MjEwMTM3MzAxMH0.H4tvl85-IDvsJnICtnTy7dI1k-u8Xn9diVDPnLEG9a8";
@@ -178,25 +179,9 @@ body { background: #000; color: #fff; min-height: 100vh; }
     document.getElementById("accountPill").textContent = getUsername() || "Sign in";
   }
 
-  // ---------- SHARED CROSS-PAGE NAVIGATION ----------
+  // ---------- SHARED SAME-TAB PAGE ENGINE ----------
   async function gotoPage(pageFile, pageParams = {}) {
-    try {
-      const response = await fetch(`${REPO_BASE}/${pageFile}`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      let content = await response.text();
-
-      const paramsScript = `<script>window.__GALAXY_PARAMS = ${JSON.stringify(pageParams)};<\/script>`;
-      content = content.replace("<head>", `<head>${paramsScript}`);
-
-      const w = window.open("", "galaxyTubeWindow");
-      if (!w) { alert("Popup blocked!"); return; }
-      w.document.open();
-      w.document.write(content);
-      w.document.close();
-    } catch (err) {
-      console.error(err);
-      alert("Failed to load page: " + err.message);
-    }
+    return window.GalaxyPageEngine.loadPage(pageFile, pageParams);
   }
 
   document.getElementById("logoLink").addEventListener("click", () => gotoPage("index.html"));
