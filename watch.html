@@ -160,6 +160,7 @@ body { background: #000; color: #fff; min-height: 100vh; }
 })();
 </script>
 <script>
+(function(){
 const API_BASE="https://www.googleapis.com/youtube/v3";
 const API_KEY_STORAGE="galaxy_youtube_api_key";
 const params=window.__GALAXY_PARAMS||Object.fromEntries(new URLSearchParams(location.search));
@@ -251,7 +252,10 @@ async function loadVideo(){
   document.getElementById("similarList").innerHTML='<div class="empty">Set an API key to load similar videos and metadata.</div>';
  }
 }
+window.react = react;
+window.toggleWatchLater = toggleWatchLater;
 updateButtons();loadVideo();
+})();
 </script>
 
 </body>
