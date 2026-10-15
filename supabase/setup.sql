@@ -47,9 +47,9 @@ create or replace function public.galaxy_cleanup_auth_data()
 returns void
 language plpgsql
 security definer
-as $
+as $$
 begin
   delete from public.galaxy_sessions where expires_at < now();
   delete from public.galaxy_auth_attempts where attempted_at < now() - interval '1 day';
 end;
-$;
+$$;
