@@ -239,7 +239,7 @@ body { background: #000; color: #fff; min-height: 100vh; }
   function openVideo(id, title) { gotoPage("watch.html", { youtube_id: id, title }).catch(e => alert("Could not open video: " + e.message)); }
   function showError(e) {
     console.error("[YouTube API]", e);
-    document.getElementById("videoGrid").innerHTML = '<div class="empty">Could not load videos: ' + esc(e.message || e) + '<br><br>Connect YouTube or set an API key. If Google reports origin_mismatch, add the actual Tryit parent-site origin to your OAuth client.</div>';
+    document.getElementById("videoGrid").innerHTML = '<div class="empty">Could not load videos: ' + esc(e.message || e) + '<br><br>Sign in to your G-Tube profile to load videos.</div>';
     document.getElementById("shortsRow").innerHTML = '<div class="empty">Shorts unavailable until the API request succeeds.</div>';
   }
   async function loadSuggestions() {
@@ -255,7 +255,7 @@ body { background: #000; color: #fff; min-height: 100vh; }
       if (results.length) {
         title.textContent = "From your subscriptions";
       } else {
-        if (!auth().apiKey() && !auth().signedIn()) throw new Error("Click Connect YouTube to personalize suggestions, or Set API key to browse public videos.");
+        if (!auth().apiKey() && !auth().signedIn()) throw new Error("Sign in to your G-Tube profile to browse videos.");
         results = await fetchYouTube("trending music gaming");
         title.textContent = auth().signedIn() ? "Suggested videos" : "Trending suggestions";
       }
