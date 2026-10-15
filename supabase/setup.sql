@@ -44,7 +44,12 @@ create index if not exists galaxy_auth_attempts_lookup_idx on public.galaxy_auth
 
 -- Run periodically to remove expired sessions and old login-attempt records.
 create or replace function public.galaxy_cleanup_auth_data()
-returns void language sql security definer as $$
+returns void
+language plpgsql
+security definer
+as $
+begin
   delete from public.galaxy_sessions where expires_at < now();
   delete from public.galaxy_auth_attempts where attempted_at < now() - interval '1 day';
-$$;
+end;
+$;
