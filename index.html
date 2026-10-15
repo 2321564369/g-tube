@@ -176,7 +176,24 @@ body { background: #000; color: #fff; min-height: 100vh; }
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/gh/2321564369/g-tube@main/page-engine.js"></script>
+<script>
+(async function installGalaxyPageEngine() {
+  try {
+    const engineUrl = "https://raw.githubusercontent.com/2321564369/g-tube/main/page-engine.html";
+    const response = await fetch(engineUrl, { cache: "no-cache" });
+    if (!response.ok) throw new Error("HTTP " + response.status);
+    const html = await response.text();
+    const parsed = new DOMParser().parseFromString(html, "text/html");
+    const source = parsed.getElementById("galaxy-engine-source");
+    if (!source) throw new Error("Engine source was not found.");
+    const script = document.createElement("script");
+    script.textContent = source.textContent;
+    document.head.appendChild(script);
+  } catch (error) {
+    console.error("[Galaxy Page Engine] Failed to initialize:", error);
+  }
+})();
+</script>
 <script>
   const SUPABASE_URL = "https://lpqrbrglatpcywdugkid.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxwcXJicmdsYXRwY3l3ZHVna2lkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3OTcwMTAsImV4cCI6MjEwMTM3MzAxMH0.H4tvl85-IDvsJnICtnTy7dI1k-u8Xn9diVDPnLEG9a8";
