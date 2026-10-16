@@ -170,6 +170,7 @@ let radioMode = false;
 let radioQueue = [];
 let radioIndex = -1;
 let radioSeedTitle = "";
+let radioSeedArtist = "";
 let radioLoading = false;
 function escapeHTML(value) {
     return String(value ?? "").replace(/[&<>"']/g, ch => ({
@@ -242,7 +243,7 @@ async function searchYouTube(mode = "videos") {
                 fetchVideoDetails(videoId);
 
                 if (mode === "mixes") {
-                    startMusicMix(videoId, card.dataset.videoTitle);
+                    startMusicMix(videoId, card.dataset.videoTitle, card.dataset.channelTitle);
                 } else {
                     radioMode = false;
                     radioQueue = [];
@@ -264,47 +265,99 @@ async function searchYouTube(mode = "videos") {
 }
 
 
-// Start a song-based radio queue, using YouTube search results for similar tracks.
-async function startMusicMix(videoId, title = "your selected song") {
+// Build a broader radio queue around the artist/seed rather than searching only the exact song title.
+// The YouTube Data API does not expose YouTube Music Radio recommendations directly.
+async function startMusicMix(videoId, title = "your selected song", channel = "") {
     if (!player) { document.getElementById("status").textContent = "YouTube player is still loading. Try again in a moment."; return; }
-    radioMode = true; radioSeedTitle = title; radioQueue = [{ id: videoId, title: title }]; radioIndex = 0;
+    radioMode = true;
+    radioSeedTitle = title;
+    radioSeedArtist = guessArtist(title, channel);
+    radioQueue = [{ id: videoId, title: title }];
+    radioIndex = 0;
     player.loadVideoById(videoId);
-    document.getElementById("status").textContent = "🎵 Radio mix started: " + title + " — finding similar songs…";
-    await addRadioTracks(videoId, title);
+    document.getElementById("status").textContent = "🎵 Starting radio for " + radioSeedArtist + " — finding a wider mix…";
+    await addRadioTracks(videoId);
 }
 
-async function addRadioTracks(seedId, seedTitle) {
+function guessArtist(title, channel) {
+    const cleaned = String(title || "").replace(/\s*\((official|lyrics?|audio|music video|video).*?\)/ig, "").trim();
+    const separators = [" - ", " – ", " — ", " | "];
+    for (const sep of separators) {
+        if (cleaned.includes(sep)) {
+            const first = cleaned.split(sep)[0].trim();
+            if (first.length > 1 && first.length < 60) return first;
+        }
+    }
+    return channel && !/topic|vevo|records|official/i.test(channel) ? channel : cleaned;
+}
+
+async function addRadioTracks(seedId) {
     if (radioLoading || !radioMode) return;
     radioLoading = true;
     try {
-        const url = new URL("https://www.googleapis.com/youtube/v3/search");
-        url.search = new URLSearchParams({ part: "snippet", type: "video", videoCategoryId: "10", safeSearch: "moderate", maxResults: "25", q: seedTitle + " similar songs music", key: YOUTUBE_API_KEY }).toString();
-        const response = await fetch(url.toString());
+        // Artist-led queries add variety: related artists, genre, and radio-style searches.
+        const q = radioSeedArtist + " similar artists alternative rock punk rock radio songs";
+        const searchUrl = new URL("https://www.googleapis.com/youtube/v3/search");
+        searchUrl.search = new URLSearchParams({ part: "snippet", type: "video", videoCategoryId: "10", safeSearch: "moderate", maxResults: "50", order: "relevance", q: q, key: YOUTUBE_API_KEY }).toString();
+        const response = await fetch(searchUrl.toString());
         const payload = await response.json();
         if (!response.ok || payload.error) throw new Error(payload.error?.message || "Could not find radio tracks.");
+        const candidates = (payload.items || []).filter(item => item.id && item.id.videoId).map(item => ({
+            id: item.id.videoId,
+            title: (item.snippet || {}).title || "YouTube song",
+            channel: (item.snippet || {}).channelTitle || ""
+        }));
+        const ids = candidates.map(item => item.id).filter((id, index, arr) => id !== seedId && arr.indexOf(id) === index);
         const known = new Set(radioQueue.map(track => track.id));
-        for (const item of payload.items || []) {
-            const id = item.id && item.id.videoId;
-            if (!id || id === seedId || known.has(id)) continue;
-            radioQueue.push({ id: id, title: (item.snippet || {}).title || "YouTube song" }); known.add(id);
+        // Duration metadata helps reject short clips and most Shorts; YouTube does not expose a definitive Shorts flag here.
+        let durations = {};
+        for (let i = 0; i < ids.length; i += 50) {
+            const batch = ids.slice(i, i + 50);
+            if (!batch.length) continue;
+            const detailsUrl = new URL("https://www.googleapis.com/youtube/v3/videos");
+            detailsUrl.search = new URLSearchParams({ part: "contentDetails", id: batch.join(","), key: YOUTUBE_API_KEY }).toString();
+            const detailsResponse = await fetch(detailsUrl.toString());
+            const details = await detailsResponse.json();
+            if (detailsResponse.ok) for (const item of details.items || []) durations[item.id] = parseIsoDuration(item.contentDetails && item.contentDetails.duration);
         }
-        document.getElementById("status").textContent = radioQueue.length > 1 ? "🎵 Radio mix playing: " + radioSeedTitle + " · " + (radioQueue.length - 1) + " songs queued" : "🎵 Playing " + radioSeedTitle + ". No similar tracks were found; try another song.";
-    } catch (error) { console.error("[G-Tube radio mix]", error); document.getElementById("status").textContent = "🎵 Playing " + radioSeedTitle + ". Could not build queue: " + error.message;
+        const clean = candidates.filter(track => {
+            if (known.has(track.id) || track.id === seedId) return false;
+            if (/#shorts?\b|\bshorts\b|\bteaser\b|\bsnippet\b|\bpreview\b|\bsped up\b|\bslowed\b|\bnightcore\b/i.test(track.title)) return false;
+            const seconds = durations[track.id];
+            return seconds === undefined || seconds >= 150;
+        });
+        // Mix up the order so the radio is not simply the first batch of search results.
+        for (let i = clean.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [clean[i], clean[j]] = [clean[j], clean[i]]; }
+        for (const track of clean) { if (!known.has(track.id)) { radioQueue.push(track); known.add(track.id); } }
+        document.getElementById("status").textContent = radioQueue.length > 1
+            ? "🎵 Radio for " + radioSeedArtist + " · " + (radioQueue.length - 1) + " tracks queued"
+            : "🎵 Playing " + radioSeedArtist + ". YouTube did not return enough suitable tracks; try another starting song.";
+    } catch (error) {
+        console.error("[G-Tube radio mix]", error);
+        document.getElementById("status").textContent = "🎵 Playing " + radioSeedArtist + ". Could not build radio queue: " + error.message;
     } finally { radioLoading = false; }
+}
+
+function parseIsoDuration(value) {
+    if (!value) return undefined;
+    const match = value.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+    if (!match) return undefined;
+    return Number(match[1] || 0) * 3600 + Number(match[2] || 0) * 60 + Number(match[3] || 0);
 }
 
 function playNextRadioTrack() {
     if (!radioMode) return;
     radioIndex++;
     if (radioIndex < radioQueue.length) {
-        const track = radioQueue[radioIndex]; player.loadVideoById(track.id);
+        const track = radioQueue[radioIndex];
+        player.loadVideoById(track.id);
         document.getElementById("url").value = "https://www.youtube.com/watch?v=" + track.id;
         fetchVideoDetails(track.id);
-        document.getElementById("status").textContent = "🎵 Radio mix: " + track.title + " · " + (radioQueue.length - radioIndex - 1) + " queued";
-        if (radioQueue.length - radioIndex <= 5) addRadioTracks(radioQueue[0].id, radioSeedTitle);
+        document.getElementById("status").textContent = "🎵 Radio for " + radioSeedArtist + " · playing " + track.title + " · " + (radioQueue.length - radioIndex - 1) + " queued";
+        if (radioQueue.length - radioIndex <= 8) addRadioTracks(radioQueue[0].id);
     } else {
-        document.getElementById("status").textContent = "🎵 Radio mix queue ended. Searching for more songs…";
-        addRadioTracks(radioQueue[0].id, radioSeedTitle).then(() => { if (radioMode && radioIndex >= radioQueue.length - 1) playNextRadioTrack(); });
+        document.getElementById("status").textContent = "🎵 Finding more radio tracks…";
+        addRadioTracks(radioQueue[0].id).then(() => { if (radioMode && radioIndex >= radioQueue.length - 1) { if (radioIndex + 1 < radioQueue.length) playNextRadioTrack(); } });
     }
 }
 
