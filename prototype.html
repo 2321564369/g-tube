@@ -166,6 +166,11 @@
 <script>
 
 let player;
+let radioMode = false;
+let radioQueue = [];
+let radioIndex = -1;
+let radioSeedTitle = "";
+let radioLoading = false;
 function escapeHTML(value) {
     return String(value ?? "").replace(/[&<>"']/g, ch => ({
         "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -177,7 +182,7 @@ const YOUTUBE_API_KEY = "AIzaSyCQ9s-fk3EqgDFAWY3GfNLwovs_l5Vm5hQ";
 
 async function searchYouTube(mode = "videos") {
     const rawQuery = document.getElementById("search-query").value.trim();
-    const query = mode === "mixes" ? (rawQuery + " music mix").trim() : rawQuery;
+    const query = rawQuery;
     const status = document.getElementById("search-status");
     const results = document.getElementById("search-results");
 
@@ -195,8 +200,8 @@ async function searchYouTube(mode = "videos") {
             part: "snippet",
             type: "video",
             safeSearch: "moderate",
-            maxResults: "18",
-            q: query,
+            maxResults: mode === "mixes" ? "25" : "18",
+            q: mode === "mixes" ? (query + " songs").trim() : query,
             key: YOUTUBE_API_KEY
         }).toString();
 
@@ -239,6 +244,9 @@ async function searchYouTube(mode = "videos") {
                 if (mode === "mixes") {
                     startMusicMix(videoId, card.dataset.videoTitle);
                 } else {
+                    radioMode = false;
+                    radioQueue = [];
+                    radioIndex = -1;
                     player.loadVideoById(videoId);
                     document.getElementById("status").textContent =
                         "▶️ Playing: " + card.dataset.videoTitle;
@@ -247,7 +255,7 @@ async function searchYouTube(mode = "videos") {
         });
 
         status.textContent = mode === "mixes"
-            ? "Found " + items.length + " starting points. Select one to try its YouTube Mix."
+            ? "Found " + items.length + " songs. Select one to start a radio mix that queues similar tracks."
             : "Found " + items.length + " videos. Select one to play.";
     } catch (error) {
         console.error("[G-Tube search]", error);
@@ -256,23 +264,47 @@ async function searchYouTube(mode = "videos") {
 }
 
 
-// Start YouTube's auto-generated related-music mix from a selected song.
-function startMusicMix(videoId, title = "your selected song") {
-    if (!player) {
-        document.getElementById("status").textContent = "YouTube player is still loading. Try again in a moment.";
-        return;
-    }
+// Start a song-based radio queue, using YouTube search results for similar tracks.
+async function startMusicMix(videoId, title = "your selected song") {
+    if (!player) { document.getElementById("status").textContent = "YouTube player is still loading. Try again in a moment."; return; }
+    radioMode = true; radioSeedTitle = title; radioQueue = [{ id: videoId, title: title }]; radioIndex = 0;
+    player.loadVideoById(videoId);
+    document.getElementById("status").textContent = "🎵 Radio mix started: " + title + " — finding similar songs…";
+    await addRadioTracks(videoId, title);
+}
 
+async function addRadioTracks(seedId, seedTitle) {
+    if (radioLoading || !radioMode) return;
+    radioLoading = true;
     try {
-        // YouTube commonly identifies a song-based auto-mix as RD + the video ID.
-        player.loadPlaylist({ listType: "playlist", list: "RD" + videoId });
-        document.getElementById("status").textContent =
-            "🎵 Starting a YouTube Mix from: " + title;
-    } catch (error) {
-        console.error("[G-Tube mix]", error);
-        player.loadVideoById(videoId);
-        document.getElementById("status").textContent =
-            "Couldn't start the mix playlist, so playing the selected song instead.";
+        const url = new URL("https://www.googleapis.com/youtube/v3/search");
+        url.search = new URLSearchParams({ part: "snippet", type: "video", videoCategoryId: "10", safeSearch: "moderate", maxResults: "25", q: seedTitle + " similar songs music", key: YOUTUBE_API_KEY }).toString();
+        const response = await fetch(url.toString());
+        const payload = await response.json();
+        if (!response.ok || payload.error) throw new Error(payload.error?.message || "Could not find radio tracks.");
+        const known = new Set(radioQueue.map(track => track.id));
+        for (const item of payload.items || []) {
+            const id = item.id && item.id.videoId;
+            if (!id || id === seedId || known.has(id)) continue;
+            radioQueue.push({ id: id, title: (item.snippet || {}).title || "YouTube song" }); known.add(id);
+        }
+        document.getElementById("status").textContent = radioQueue.length > 1 ? "🎵 Radio mix playing: " + radioSeedTitle + " · " + (radioQueue.length - 1) + " songs queued" : "🎵 Playing " + radioSeedTitle + ". No similar tracks were found; try another song.";
+    } catch (error) { console.error("[G-Tube radio mix]", error); document.getElementById("status").textContent = "🎵 Playing " + radioSeedTitle + ". Could not build queue: " + error.message;
+    } finally { radioLoading = false; }
+}
+
+function playNextRadioTrack() {
+    if (!radioMode) return;
+    radioIndex++;
+    if (radioIndex < radioQueue.length) {
+        const track = radioQueue[radioIndex]; player.loadVideoById(track.id);
+        document.getElementById("url").value = "https://www.youtube.com/watch?v=" + track.id;
+        fetchVideoDetails(track.id);
+        document.getElementById("status").textContent = "🎵 Radio mix: " + track.title + " · " + (radioQueue.length - radioIndex - 1) + " queued";
+        if (radioQueue.length - radioIndex <= 5) addRadioTracks(radioQueue[0].id, radioSeedTitle);
+    } else {
+        document.getElementById("status").textContent = "🎵 Radio mix queue ended. Searching for more songs…";
+        addRadioTracks(radioQueue[0].id, radioSeedTitle).then(() => { if (radioMode && radioIndex >= radioQueue.length - 1) playNextRadioTrack(); });
     }
 }
 
@@ -292,6 +324,7 @@ function onYouTubeIframeAPIReady() {
         },
 
         events: {
+            onStateChange: function (event) { if (event.data === YT.PlayerState.ENDED && radioMode) playNextRadioTrack(); },
             onReady: function () {
 
                 document.getElementById("status").textContent =
@@ -384,6 +417,7 @@ function loadYouTube() {
         return;
     }
 
+    radioMode = false; radioQueue = []; radioIndex = -1;
     player.loadVideoById(id);
     fetchVideoDetails(id);
 
