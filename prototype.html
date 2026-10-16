@@ -67,6 +67,30 @@
             color: #94a3b8;
         }
 
+        #search-results {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 12px;
+            margin: 18px 0;
+        }
+
+        .result-card {
+            min-width: 0;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            overflow: hidden;
+            cursor: pointer;
+            color: white;
+            text-align: left;
+            padding: 0;
+        }
+
+        .result-card:hover { border-color: #38bdf8; }
+        .result-card img { display: block; width: 100%; aspect-ratio: 16/9; object-fit: cover; }
+        .result-card span { display: block; padding: 9px; font-size: 13px; line-height: 1.35; }
+        #search-status { color: #94a3b8; font-size: 13px; margin-top: 8px; }
+
         #description-box {
             margin-top: 20px;
             background: #0f172a;
@@ -100,17 +124,18 @@
 
     
 
+    <h1>Search YouTube</h1>
     <div class="input">
+        <input id="search-query" placeholder="Search videos..." onkeydown="if(event.key==='Enter') searchYouTube()">
+        <button onclick="searchYouTube()">Search</button>
+    </div>
+    <div id="search-status">Search requires a G-Tube profile so requests can use the server-side YouTube API key.</div>
+    <div id="search-results"></div>
 
-        <input
-            id="url"
-            placeholder="Put it here URL"
-        >
-
-        <button onclick="loadYouTube()">
-            Load
-        </button>
-
+    <h2 style="margin:18px 0 10px">Or play a URL</h2>
+    <div class="input">
+        <input id="url" placeholder="Paste a YouTube URL">
+        <button onclick="loadYouTube()">Load</button>
     </div>
 
     <div id="video"></div>
@@ -127,11 +152,70 @@
 </div>
 
 
+<script src="https://cdn.jsdelivr.net/gh/2321564369/g-tube@main/galaxy-client6.js"></script>
 <script src="https://www.youtube.com/iframe_api"></script>
 
 <script>
 
 let player;
+const auth = () => window.GalaxyYouTubeAuth;
+function escapeHTML(value) {
+    return String(value ?? "").replace(/[&<>"']/g, ch => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    })[ch]);
+}
+
+async function searchYouTube() {
+    const query = document.getElementById("search-query").value.trim();
+    const status = document.getElementById("search-status");
+    const results = document.getElementById("search-results");
+    if (!query) {
+        status.textContent = "Enter something to search for.";
+        return;
+    }
+    if (!auth() || !auth().signedIn()) {
+        status.textContent = "Sign in to your G-Tube profile to search YouTube.";
+        return;
+    }
+    status.textContent = "Searching YouTube...";
+    results.innerHTML = "";
+    try {
+        const response = await auth().ytApi("search", {
+            part: "snippet", type: "video", maxResults: 18, q: query, safeSearch: "moderate"
+        });
+        const items = (response.items || []).filter(item => item.id && item.id.videoId);
+        if (!items.length) {
+            status.textContent = "No results found.";
+            return;
+        }
+        results.innerHTML = items.map(item => {
+            const snippet = item.snippet || {};
+            const thumbs = snippet.thumbnails || {};
+            const thumb = (thumbs.high || thumbs.medium || thumbs.default || {}).url || "";
+            return '<button class="result-card" data-video-id="' + escapeHTML(item.id.videoId) +
+                '" data-video-title="' + escapeHTML(snippet.title || "YouTube video") + '">' +
+                '<img src="' + escapeHTML(thumb) + '" alt="">' +
+                '<span>' + escapeHTML(snippet.title || "Untitled") + '<br><small>' +
+                escapeHTML(snippet.channelTitle || "") + '</small></span></button>';
+        }).join("");
+        results.querySelectorAll(".result-card").forEach(card => {
+            card.addEventListener("click", () => {
+                if (!player) {
+                    status.textContent = "YouTube player is still loading. Try again in a moment.";
+                    return;
+                }
+                player.loadVideoById(card.dataset.videoId);
+                document.getElementById("url").value = "https://www.youtube.com/watch?v=" + card.dataset.videoId;
+                fetchVideoDetails(card.dataset.videoId);
+                document.getElementById("status").textContent = "▶️ Playing: " + card.dataset.videoTitle;
+            });
+        });
+        status.textContent = "Found " + items.length + " videos. Select one to play.";
+    } catch (error) {
+        console.error("[G-Tube search]", error);
+        status.textContent = "Search failed: " + (error.message || String(error));
+    }
+}
 
 
 // YouTube calls this automatically
