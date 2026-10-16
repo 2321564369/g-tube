@@ -225,7 +225,7 @@ async function searchYouTube(mode = "videos") {
             const thumbs = snippet.thumbnails || {};
             const thumb = (thumbs.high || thumbs.medium || thumbs.default || {}).url || "";
             return '<button class="result-card" data-video-id="' + escapeHTML(item.id.videoId) +
-                '" data-video-title="' + escapeHTML(snippet.title || "YouTube video") + '">' +
+                '" data-video-title="' + escapeHTML(snippet.title || "YouTube video") + '" data-channel-title="' + escapeHTML(snippet.channelTitle || "") + '">' +
                 '<img src="' + escapeHTML(thumb) + '" alt="">' +
                 '<span>' + escapeHTML(snippet.title || "Untitled") + '<br><small>' +
                 escapeHTML(snippet.channelTitle || "") + '</small></span></button>';
