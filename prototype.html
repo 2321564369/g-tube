@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>YouTube Player</title>
+
+    <style>
+        body {
+            margin: 0;
+            background: #0f172a;
+            color: white;
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .player {
+            width: 850px;
+            max-width: 95%;
+            background: #1e293b;
+            padding: 25px;
+            border-radius: 18px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .input {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        input {
+            flex: 1;
+            padding: 13px;
+            border-radius: 8px;
+            border: 1px solid #475569;
+            background: #0f172a;
+            color: white;
+            font-size: 15px;
+        }
+
+        button {
+            padding: 12px 18px;
+            border: none;
+            border-radius: 8px;
+            background: #38bdf8;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        #video {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background: black;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        #status {
+            text-align: center;
+            margin-top: 15px;
+            color: #94a3b8;
+        }
+
+        #description-box {
+            margin-top: 20px;
+            background: #0f172a;
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid #334155;
+            display: none;
+        }
+
+        #description-box h3 {
+            margin-top: 0;
+            margin-bottom: 8px;
+            color: #38bdf8;
+            font-size: 16px;
+        }
+
+        #description {
+            color: #cbd5e1;
+            font-size: 14px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-break: break-word;
+            margin: 0;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="player">
+
+    
+
+    <div class="input">
+
+        <input
+            id="url"
+            placeholder="Put it here URL"
+        >
+
+        <button onclick="loadYouTube()">
+            Load
+        </button>
+
+    </div>
+
+    <div id="video"></div>
+
+    <div id="status">
+        Enter a YouTube URL.
+    </div>
+
+    <div id="description-box">
+        <h3>Video Details</h3>
+        <p id="description"></p>
+    </div>
+
+</div>
+
+
+<script src="https://www.youtube.com/iframe_api"></script>
+
+<script>
+
+let player;
+
+
+// YouTube calls this automatically
+function onYouTubeIframeAPIReady() {
+
+    player = new YT.Player("video", {
+
+        width: "100%",
+        height: "100%",
+
+        videoId: "",
+
+        playerVars: {
+            playsinline: 1,
+            rel: 0
+        },
+
+        events: {
+            onReady: function () {
+
+                document.getElementById("status").textContent =
+                    "Ready — paste a YouTube URL.";
+
+            },
+
+            onError: function (event) {
+
+                document.getElementById("status").textContent =
+                    "❌ YouTube couldn't play this video.";
+
+            }
+        }
+    });
+}
+
+
+// Get ID from YouTube URL
+function getVideoID(url) {
+
+    try {
+
+        const u = new URL(url);
+
+        // youtube.com/watch?v=XXXX
+        if (u.hostname.includes("youtube.com")) {
+
+            return u.searchParams.get("v");
+        }
+
+        // youtu.be/XXXX
+        if (u.hostname === "youtu.be") {
+
+            return u.pathname.substring(1);
+        }
+
+        return null;
+
+    } catch {
+
+        return null;
+    }
+}
+
+
+// Fetch video title and snippet metadata via oEmbed
+async function fetchVideoDetails(id) {
+    const descBox = document.getElementById("description-box");
+    const descText = document.getElementById("description");
+
+    try {
+        const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${id}&format=json`);
+        
+        if (!response.ok) throw new Error("Metadata request failed");
+
+        const data = await response.json();
+        
+        descText.textContent = `Title: ${data.title}\nAuthor: ${data.author_name}`;
+        descBox.style.display = "block";
+    } catch {
+        // Fallback if oEmbed is blocked or fails
+        descText.textContent = "Unable to retrieve description details for this video.";
+        descBox.style.display = "block";
+    }
+}
+
+
+// Load video
+function loadYouTube() {
+
+    const url =
+        document.getElementById("url").value.trim();
+
+    const id = getVideoID(url);
+
+    if (!id) {
+
+        document.getElementById("status").textContent =
+            "❌ Invalid YouTube URL.";
+
+        return;
+    }
+
+    if (!player) {
+
+        document.getElementById("status").textContent =
+            "YouTube is still loading. Try again in a second.";
+
+        return;
+    }
+
+    player.loadVideoById(id);
+    fetchVideoDetails(id);
+
+    document.getElementById("status").textContent =
+        "▶️ Playing YouTube video";
+
+}
+
+</script>
+
+</body>
+</html>
+
+
+
