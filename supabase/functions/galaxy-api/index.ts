@@ -145,22 +145,6 @@ serve(async (req) => {
       if (!response.ok || data.error) return reply(response.status, { error: data.error?.message || "YouTube API request failed." });
       return reply(200, { data });
     }
-    if (action === "youtube") {
-      if (!youtubeApiKey) return reply(500, { error: "Set YOUTUBE_API_KEY in Supabase Edge Function secrets." });
-      const path = String(body.path || "");
-      if (!allowedYoutubePaths.has(path)) return reply(400, { error: "That YouTube API endpoint is not allowed." });
-      const params = body.params && typeof body.params === "object" ? body.params : {};
-      const url = new URL("https://www.googleapis.com/youtube/v3/" + path);
-      for (const [key, value] of Object.entries(params)) {
-        if (["key", "access_token", "Authorization"].includes(key)) continue;
-        if (value !== undefined && value !== null && value !== "") url.searchParams.set(key, Array.isArray(value) ? value.join(",") : String(value));
-      }
-      url.searchParams.set("key", youtubeApiKey);
-      const response = await fetch(url);
-      const data = await response.json();
-      if (!response.ok || data.error) return reply(response.status, { error: data.error?.message || "YouTube API request failed." });
-      return reply(200, { data });
-    }
 
     if (action === "data-get") {
       const key = String(body.key || "");
