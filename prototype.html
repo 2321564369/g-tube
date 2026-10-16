@@ -90,6 +90,11 @@
         .result-card img { display: block; width: 100%; aspect-ratio: 16/9; object-fit: cover; }
         .result-card span { display: block; padding: 9px; font-size: 13px; line-height: 1.35; }
         #search-status { color: #94a3b8; font-size: 13px; margin-top: 8px; }
+        .search-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+        .search-actions button { flex: 1; min-width: 145px; }
+        .search-actions .secondary { background: #334155; color: white; }
+        .result-card { display: block; width: 100%; }
+        .result-card.active { border-color: #38bdf8; }
 
         #description-box {
             margin-top: 20px;
@@ -127,9 +132,13 @@
     <h1>Search YouTube</h1>
     <div class="input">
         <input id="search-query" placeholder="Search videos..." onkeydown="if(event.key==='Enter') searchYouTube()">
-        <button onclick="searchYouTube()">Search</button>
+        <button onclick="searchYouTube('videos')">Search</button>
     </div>
-    <div id="search-status">Search YouTube without a profile.</div>
+    <div class="search-actions">
+        <button onclick="searchYouTube('videos')">Search Videos</button>
+        <button class="secondary" onclick="searchYouTube('mixes')">🎵 Find Music Mixes</button>
+    </div>
+    <div id="search-status">Search YouTube, or find music mixes that keep playing related songs.</div>
     <div id="search-results"></div>
 
     <h2 style="margin:18px 0 10px">Or play a URL</h2>
@@ -166,8 +175,9 @@ function escapeHTML(value) {
 // Personal prototype setup: the key is visible in this client-side file.
 const YOUTUBE_API_KEY = "AIzaSyCQ9s-fk3EqgDFAWY3GfNLwovs_l5Vm5hQ";
 
-async function searchYouTube() {
-    const query = document.getElementById("search-query").value.trim();
+async function searchYouTube(mode = "videos") {
+    const rawQuery = document.getElementById("search-query").value.trim();
+    const query = mode === "mixes" ? (rawQuery + " music mix").trim() : rawQuery;
     const status = document.getElementById("search-status");
     const results = document.getElementById("search-results");
 
@@ -200,7 +210,7 @@ async function searchYouTube() {
 
         const items = (payload.items || []).filter(item => item.id && item.id.videoId);
         if (!items.length) {
-            status.textContent = "No results found.";
+            status.textContent = mode === "mixes" ? "No mixes found. Try a different artist or genre." : "No results found.";
             return;
         }
 
@@ -221,22 +231,50 @@ async function searchYouTube() {
                     status.textContent = "YouTube player is still loading. Try again in a moment.";
                     return;
                 }
-                player.loadVideoById(card.dataset.videoId);
+                const videoId = card.dataset.videoId;
                 document.getElementById("url").value =
-                    "https://www.youtube.com/watch?v=" + card.dataset.videoId;
-                fetchVideoDetails(card.dataset.videoId);
-                document.getElementById("status").textContent =
-                    "▶️ Playing: " + card.dataset.videoTitle;
+                    "https://www.youtube.com/watch?v=" + videoId;
+                fetchVideoDetails(videoId);
+
+                if (mode === "mixes") {
+                    startMusicMix(videoId, card.dataset.videoTitle);
+                } else {
+                    player.loadVideoById(videoId);
+                    document.getElementById("status").textContent =
+                        "▶️ Playing: " + card.dataset.videoTitle;
+                }
             });
         });
 
-        status.textContent = "Found " + items.length + " videos. Select one to play.";
+        status.textContent = mode === "mixes"
+            ? "Found " + items.length + " starting points. Select one to try its YouTube Mix."
+            : "Found " + items.length + " videos. Select one to play.";
     } catch (error) {
         console.error("[G-Tube search]", error);
         status.textContent = "Search failed: " + (error.message || String(error));
     }
 }
 
+
+// Start YouTube's auto-generated related-music mix from a selected song.
+function startMusicMix(videoId, title = "your selected song") {
+    if (!player) {
+        document.getElementById("status").textContent = "YouTube player is still loading. Try again in a moment.";
+        return;
+    }
+
+    try {
+        // YouTube commonly identifies a song-based auto-mix as RD + the video ID.
+        player.loadPlaylist({ listType: "playlist", list: "RD" + videoId });
+        document.getElementById("status").textContent =
+            "🎵 Starting a YouTube Mix from: " + title;
+    } catch (error) {
+        console.error("[G-Tube mix]", error);
+        player.loadVideoById(videoId);
+        document.getElementById("status").textContent =
+            "Couldn't start the mix playlist, so playing the selected song instead.";
+    }
+}
 
 // YouTube calls this automatically
 function onYouTubeIframeAPIReady() {
