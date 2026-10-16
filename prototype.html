@@ -296,7 +296,7 @@ async function addRadioTracks(seedId) {
     radioLoading = true;
     try {
         // Artist-led queries add variety: related artists, genre, and radio-style searches.
-        const q = radioSeedArtist + " similar artists alternative rock punk rock radio songs";
+        const q = radioSeedTitle + " similar songs music";
         const searchUrl = new URL("https://www.googleapis.com/youtube/v3/search");
         searchUrl.search = new URLSearchParams({ part: "snippet", type: "video", videoCategoryId: "10", safeSearch: "moderate", maxResults: "50", order: "relevance", q: q, key: YOUTUBE_API_KEY }).toString();
         const response = await fetch(searchUrl.toString());
@@ -309,6 +309,7 @@ async function addRadioTracks(seedId) {
         }));
         const ids = candidates.map(item => item.id).filter((id, index, arr) => id !== seedId && arr.indexOf(id) === index);
         const known = new Set(radioQueue.map(track => track.id));
+        const seedTitleKey = normalizeSongTitle(radioSeedTitle);
         // Duration metadata helps reject short clips and most Shorts; YouTube does not expose a definitive Shorts flag here.
         let durations = {};
         for (let i = 0; i < ids.length; i += 50) {
@@ -322,9 +323,10 @@ async function addRadioTracks(seedId) {
         }
         const clean = candidates.filter(track => {
             if (known.has(track.id) || track.id === seedId) return false;
+            if (normalizeSongTitle(track.title) === seedTitleKey) return false;
             if (/#shorts?\b|\bshorts\b|\bteaser\b|\bsnippet\b|\bpreview\b|\bsped up\b|\bslowed\b|\bnightcore\b/i.test(track.title)) return false;
             const seconds = durations[track.id];
-            return seconds === undefined || seconds >= 150;
+            return seconds !== undefined && seconds >= 150;
         });
         // Mix up the order so the radio is not simply the first batch of search results.
         for (let i = clean.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [clean[i], clean[j]] = [clean[j], clean[i]]; }
@@ -336,6 +338,16 @@ async function addRadioTracks(seedId) {
         console.error("[G-Tube radio mix]", error);
         document.getElementById("status").textContent = "🎵 Playing " + radioSeedArtist + ". Could not build radio queue: " + error.message;
     } finally { radioLoading = false; }
+}
+
+function normalizeSongTitle(title) {
+    return String(title || "")
+        .toLowerCase()
+        .replace(/\([^)]*(official|lyrics?|audio|music video|visualizer|4k|hd)[^)]*\)/g, " ")
+        .replace(/\b(official|lyrics?|audio|music video|visualizer|4k|hd|remaster(ed)?|\d{4} remaster)\b/g, " ")
+        .replace(/[^a-z0-9]+/g, " ")
+        .trim()
+        .replace(/\s+/g, " ");
 }
 
 function parseIsoDuration(value) {
