@@ -58,6 +58,20 @@ async function requireUser(token: string) {
 const allowedYoutubePaths = new Set(["search", "videos", "channels", "playlistItems"]);
 const allowedDataKeys = new Set(["video_data", "watch_history", "preferences", "saved_videos", "liked_videos"]);
 
+// Lightweight per-instance throttling for anonymous prototype searches.
+const publicSearchHits = new Map<string, number[]>();
+function allowPublicSearch(ip: string): boolean {
+  const now = Date.now();
+  const recent = (publicSearchHits.get(ip) || []).filter(t => now - t < 10 * 60 * 1000);
+  if (recent.length >= 25) {
+    publicSearchHits.set(ip, recent);
+    return false;
+  }
+  recent.push(now);
+  publicSearchHits.set(ip, recent);
+  return true;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return reply(405, { error: "Use POST." });
@@ -87,6 +101,28 @@ serve(async (req) => {
       if (!profile || profile.pin_hash !== pinHash) return reply(401, { error: "Incorrect username or PIN." });
       return reply(200, await createSession(profile.id, username));
     }
+    if (action === "youtube-public-search") {
+      if (!youtubeApiKey) return reply(500, { error: "YouTube search is not configured on the server." });
+      const forwarded = req.headers.get("x-forwarded-for") || "";
+      const ip = forwarded.split(",")[0].trim() || req.headers.get("cf-connecting-ip") || "unknown";
+      if (!allowPublicSearch(ip)) return reply(429, { error: "Search limit reached for this connection. Wait 10 minutes and try again." });
+      const raw = body.params && typeof body.params === "object" ? body.params : {};
+      const q = String(raw.q || "").trim().slice(0, 100);
+      if (!q) return reply(400, { error: "Enter a search term." });
+      const maxResults = Math.min(20, Math.max(1, Number(raw.maxResults) || 18));
+      const url = new URL("https://www.googleapis.com/youtube/v3/search");
+      url.searchParams.set("part", "snippet");
+      url.searchParams.set("type", "video");
+      url.searchParams.set("maxResults", String(maxResults));
+      url.searchParams.set("q", q);
+      url.searchParams.set("safeSearch", "moderate");
+      url.searchParams.set("key", youtubeApiKey);
+      const response = await fetch(url);
+      const data = await response.json();
+      if (!response.ok || data.error) return reply(response.status, { error: data.error?.message || "YouTube search failed." });
+      return reply(200, { data });
+    }
+
     const user = await requireUser(String(body.session || ""));
     if (action === "logout") {
       const tokenHash = await hash(String(body.session || ""));
